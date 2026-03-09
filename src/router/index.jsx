@@ -1,10 +1,30 @@
 import { createBrowserRouter } from "react-router-dom";
-import App from "../App";
+import Home from "../pages/Home";
+import Matches from "../pages/Matches";
+import Teams from "../pages/Teams";
+import Players from "../pages/Players";
+import News from "../pages/News";
 
 const router = createBrowserRouter([
     {
         path: "/",
-        element: <App />,
+        element: <Home />,
+    },
+    {
+        path: "/matches",
+        element: <Matches />,
+    },
+    {
+        path: "/teams",
+        element: <Teams />,
+    },
+    {
+        path: "/players",
+        element: <Players />,
+    },
+    {
+        path: "/news",
+        element: <News />,
     },
 ]);
 
