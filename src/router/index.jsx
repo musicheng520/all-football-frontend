@@ -8,6 +8,8 @@ import Players from "../pages/Players";
 import News from "../pages/News";
 import MatchDetail from "../pages/MatchDetail";
 import TeamDetail from "../pages/TeamDetail";
+import PlayerDetail from "../pages/PlayerDetail";
+
 
 const router = createBrowserRouter([
     {
@@ -27,6 +29,10 @@ const router = createBrowserRouter([
             {
                 path: "/teams/:id",
                 element: <TeamDetail/>
+            },
+            {
+                path:"/players/:id",
+                element:<PlayerDetail />
             }
         ]
     }

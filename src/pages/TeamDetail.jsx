@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams , Link} from "react-router-dom";
 import { getTeamDetail } from "../api/teams";
 
 function TeamDetail() {
@@ -47,8 +47,15 @@ function TeamDetail() {
 
             {squad.map(player => (
                 <div key={player.id}>
+
                     <img src={player.photo} width="30" />
-                    {player.name} ({player.age})
+
+                    <Link to={`/players/${player.id}?season=2025`}>
+                        {player.name}
+                    </Link>
+
+                    ({player.age})
+
                 </div>
             ))}
 
