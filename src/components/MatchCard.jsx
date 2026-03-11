@@ -1,10 +1,12 @@
+import { useNavigate } from "react-router-dom";
+
 function MatchCard({ match }) {
 
-    const getStatusColor = (status) => {
+    const navigate = useNavigate();
 
+    const getStatusColor = (status) => {
         if (status === "LIVE") return "red";
         if (status === "FT") return "gray";
-
         return "green";
     };
 
@@ -12,11 +14,13 @@ function MatchCard({ match }) {
 
     return (
         <div
+            onClick={() => navigate(`/matches/${match.id}`)}
             style={{
                 border: "1px solid #ddd",
                 padding: "12px",
                 marginBottom: "12px",
-                borderRadius: "6px"
+                borderRadius: "6px",
+                cursor: "pointer"
             }}
         >
 
@@ -36,8 +40,8 @@ function MatchCard({ match }) {
                         marginLeft: "6px"
                     }}
                 >
-          {match.status}
-        </span>
+                    {match.status}
+                </span>
             </div>
 
             <div>

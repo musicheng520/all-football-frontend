@@ -1,5 +1,9 @@
-import apiClient from "./apiClient";
+import request from "./apiClient";
 
 export const getFixtures = (params) => {
-    return apiClient.get("/fixtures", { params });
+    return request.get("/fixtures", { params });
+};
+
+export const getFixtureDetail = (id) => {
+    return request.get(`/fixtures/${id}`);
 };

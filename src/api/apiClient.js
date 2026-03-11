@@ -1,8 +1,8 @@
 import axios from "axios";
 
-const apiClient = axios.create({
+const request = axios.create({
     baseURL: "http://localhost:8080",
     timeout: 5000,
 });
 
-export default apiClient;
+export default request;

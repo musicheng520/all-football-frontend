@@ -6,6 +6,7 @@ import Matches from "../pages/Matches";
 import Teams from "../pages/Teams";
 import Players from "../pages/Players";
 import News from "../pages/News";
+import MatchDetail from "../pages/MatchDetail";
 
 const router = createBrowserRouter([
     {
@@ -16,7 +17,8 @@ const router = createBrowserRouter([
             { path: "/matches", element: <Matches /> },
             { path: "/teams", element: <Teams /> },
             { path: "/players", element: <Players /> },
-            { path: "/news", element: <News /> }
+            { path: "/news", element: <News /> },
+            { path: "/matches/:id", element: <MatchDetail />}
         ]
     }
 ]);
