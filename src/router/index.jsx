@@ -15,6 +15,7 @@ import NewsDetail from "../pages/NewsDetail";
 import Login from "../pages/Login";
 import Register from "../pages/Register";
 import Profile from "../pages/Profile";
+import SearchResults from "../pages/SearchResults";
 
 const router = createBrowserRouter([
     {
@@ -22,24 +23,26 @@ const router = createBrowserRouter([
         element: <MainLayout />,
         children: [
 
-            { path: "/", element: <Home /> },
+            { index: true, element: <Home /> },
 
-            { path: "/matches", element: <Matches /> },
-            { path: "/matches/:id", element: <MatchDetail /> },
+            { path: "matches", element: <Matches /> },
+            { path: "matches/:id", element: <MatchDetail /> },
 
-            { path: "/teams", element: <Teams /> },
-            { path: "/teams/:id", element: <TeamDetail /> },
+            { path: "teams", element: <Teams /> },
+            { path: "teams/:id", element: <TeamDetail /> },
 
-            { path: "/players", element: <Players /> },
-            { path: "/players/:id", element: <PlayerDetail /> },
+            { path: "players", element: <Players /> },
+            { path: "players/:id", element: <PlayerDetail /> },
 
-            { path: "/news", element: <News /> },
-            { path: "/news/:id", element: <NewsDetail /> },
+            { path: "news", element: <News /> },
+            { path: "news/:id", element: <NewsDetail /> },
 
-            { path: "/login", element: <Login /> },
-            { path: "/register", element: <Register /> },
+            { path: "login", element: <Login /> },
+            { path: "register", element: <Register /> },
 
-            { path: "/profile", element: <Profile /> }
+            { path: "profile", element: <Profile /> },
+
+            { path: "search", element: <SearchResults /> }
 
         ]
     }
