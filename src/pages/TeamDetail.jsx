@@ -284,64 +284,119 @@ function TeamDetail() {
 
                         return (
 
-                            <div
+                            <Link
                                 key={match.id}
+                                to={`/matches/${match.id}`}
                                 style={{
-                                    marginBottom: 18,
-                                    borderBottom: "1px solid #eee",
-                                    paddingBottom: 10
+                                    textDecoration: "none",
+                                    color: "inherit"
                                 }}
                             >
 
-                                <div style={{ fontWeight: "bold" }}>
-                                    {match.round}
-                                </div>
-
-
                                 <div
                                     style={{
-                                        display: "flex",
-                                        alignItems: "center",
-                                        gap: 8,
-                                        marginTop: 5
+                                        marginBottom: 18,
+                                        borderBottom: "1px solid #eee",
+                                        paddingBottom: 10,
+                                        cursor: "pointer"
+                                    }}
+                                    onMouseEnter={(e) => {
+                                        e.currentTarget.style.background = "#fafafa";
+                                    }}
+                                    onMouseLeave={(e) => {
+                                        e.currentTarget.style.background = "transparent";
                                     }}
                                 >
 
-                                    <Link to={`/teams/${match.homeTeamId}`}>
-                                        <img src={match.homeTeamLogo} width="26" />
-                                    </Link>
+                                    {/* ROUND */}
+                                    <div style={{ fontWeight: "bold" }}>
+                                        {match.round}
+                                    </div>
 
-                                    {match.homeTeamName}
 
-                                    <b style={{ margin: "0 10px" }}>
-                                        {match.homeScore ?? "-"} :
-                                        {match.awayScore ?? "-"}
-                                    </b>
+                                    {/* MATCH ROW */}
+                                    <div
+                                        style={{
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "space-between",
+                                            marginTop: 6
+                                        }}
+                                    >
 
-                                    {match.awayTeamName}
+                                        {/* HOME */}
+                                        <Link
+                                            to={`/teams/${match.homeTeamId}`}
+                                            onClick={(e) => e.stopPropagation()}
+                                            style={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: 6,
+                                                textDecoration: "none",
+                                                color: "inherit",
+                                                width: 150
+                                            }}
+                                        >
+                                            <img src={match.homeTeamLogo} width="26" />
+                                            <span>{match.homeTeamName}</span>
+                                        </Link>
 
-                                    <Link to={`/teams/${match.awayTeamId}`}>
-                                        <img src={match.awayTeamLogo} width="26" />
-                                    </Link>
+
+                                        {/* SCORE（核心点击区） */}
+                                        <div style={{ textAlign: "center" }}>
+
+                                            <b style={{ fontSize: 16 }}>
+                                                {match.homeScore ?? "-"} :
+                                                {match.awayScore ?? "-"}
+                                            </b>
+
+                                            <div style={{ fontSize: 12, color: "#666" }}>
+                                                {match.status}
+                                            </div>
+
+                                        </div>
+
+
+                                        {/* AWAY */}
+                                        <Link
+                                            to={`/teams/${match.awayTeamId}`}
+                                            onClick={(e) => e.stopPropagation()}
+                                            style={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: 6,
+                                                textDecoration: "none",
+                                                color: "inherit",
+                                                width: 150,
+                                                justifyContent: "flex-end"
+                                            }}
+                                        >
+                                            <span>{match.awayTeamName}</span>
+                                            <img src={match.awayTeamLogo} width="26" />
+                                        </Link>
+
+                                    </div>
+
+
+                                    {/* META */}
+                                    <div
+                                        style={{
+                                            fontSize: 13,
+                                            color: "#666",
+                                            marginTop: 6,
+                                            textAlign: "center"
+                                        }}
+                                    >
+                                        {date} | {match.venue}
+                                    </div>
 
                                 </div>
 
-
-                                <div
-                                    style={{
-                                        fontSize: 13,
-                                        color: "#666"
-                                    }}
-                                >
-                                    {date} | {match.venue} | {match.status}
-                                </div>
-
-                            </div>
+                            </Link>
 
                         );
 
                     })}
-
 
 
                     <Pagination

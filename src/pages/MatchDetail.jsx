@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
-import { Tabs, Tab, Box } from "@mui/material";
+import { Tabs, Tab, Box, Chip } from "@mui/material";
 
 import { getFixtureDetail } from "../api/fixtures";
+import { connectSocket, disconnectSocket } from "../utils/socket";
 
 function MatchDetail() {
 
@@ -14,7 +15,7 @@ function MatchDetail() {
 
 
     // =========================
-    // FETCH
+    // INITIAL LOAD
     // =========================
     useEffect(() => {
 
@@ -29,6 +30,35 @@ function MatchDetail() {
 
 
     // =========================
+    // LIVE SOCKET
+    // =========================
+    useEffect(() => {
+
+        if (!id) return;
+
+        connectSocket(id, (wsData) => {
+
+            console.log("LIVE UPDATE:", wsData);
+
+            setData(prev => {
+
+                if (!prev) return prev;
+
+                return {
+                    ...prev,
+                    fixture: wsData.fixture || prev.fixture,
+                    events: wsData.events || prev.events
+                };
+            });
+
+        });
+
+        return () => disconnectSocket();
+
+    }, [id]);
+
+
+    // =========================
     // HELPERS
     // =========================
     const formatTime = (t) => {
@@ -36,9 +66,29 @@ function MatchDetail() {
         return `${t[0]}-${t[1]}-${t[2]} ${t[3]}:${t[4]}`;
     };
 
+    const isLive = (status) => {
+        return ["LIVE", "1H", "2H"].includes(status);
+    };
 
-    // 去重 events（很关键）
-    const deduplicateEvents = (events) => {
+    const getStatusChip = (status) => {
+
+        if (isLive(status)) {
+            return <Chip label="LIVE" color="error" size="small" />;
+        }
+
+        if (status === "FT") {
+            return <Chip label="FT" color="success" size="small" />;
+        }
+
+        if (status === "NS") {
+            return <Chip label="UPCOMING" size="small" />;
+        }
+
+        return <Chip label={status} size="small" />;
+    };
+
+
+    const deduplicateEvents = (events = []) => {
 
         const seen = new Set();
 
@@ -51,41 +101,47 @@ function MatchDetail() {
     };
 
 
+    // =========================
+    // RENDERERS
+    // =========================
     const renderEvents = (events, homeId) => {
 
-        const cleanEvents = deduplicateEvents(events)
-            .sort((a, b) => a.minute - b.minute);
+        if (!events || events.length === 0) {
+            return <p>No events yet</p>;
+        }
 
-        return cleanEvents.map((e, i) => {
+        return deduplicateEvents(events)
+            .sort((a, b) => a.minute - b.minute)
+            .map((e, i) => {
 
-            const isHome = e.teamId === homeId;
+                const isHome = e.teamId === homeId;
 
-            return (
-                <div
-                    key={i}
-                    style={{
-                        display: "flex",
-                        justifyContent: isHome ? "flex-start" : "flex-end",
-                        marginBottom: 10
-                    }}
-                >
-                    <div style={{
-                        background: "#f5f5f5",
-                        padding: 10,
-                        borderRadius: 8,
-                        maxWidth: "60%"
-                    }}>
-                        <b>{e.minute}'</b> {e.type} - {e.playerName}
+                return (
+                    <div
+                        key={i}
+                        style={{
+                            display: "flex",
+                            justifyContent: isHome ? "flex-start" : "flex-end",
+                            marginBottom: 10
+                        }}
+                    >
+                        <div style={{
+                            background: "#f5f5f5",
+                            padding: 10,
+                            borderRadius: 8,
+                            maxWidth: "60%"
+                        }}>
+                            <b>{e.minute}'</b> {e.type} - {e.playerName}
 
-                        {e.assistPlayerName && (
-                            <div style={{ fontSize: 12, color: "#666" }}>
-                                Assist: {e.assistPlayerName}
-                            </div>
-                        )}
+                            {e.assistPlayerName && (
+                                <div style={{ fontSize: 12, color: "#666" }}>
+                                    Assist: {e.assistPlayerName}
+                                </div>
+                            )}
+                        </div>
                     </div>
-                </div>
-            );
-        });
+                );
+            });
     };
 
 
@@ -115,21 +171,18 @@ function MatchDetail() {
 
     const renderLineup = (lineup, teamName, status) => {
 
-        if (!lineup) {
-            return <p>{teamName}: Lineup not available</p>;
-        }
+        if (!lineup) return <p>{teamName}: No lineup</p>;
 
-        if (!lineup.startingXI || lineup.startingXI.length === 0) {
+        if (!lineup.startingXI?.length) {
 
-            if (status === "NS") return <p>{teamName}: Lineups will be available before kickoff</p>;
-            if (status === "LIVE") return <p>{teamName}: Loading lineup...</p>;
+            if (status === "NS") return <p>{teamName}: Not started</p>;
+            if (isLive(status)) return <p>{teamName}: Loading lineup...</p>;
 
-            return <p>{teamName}: No lineup data</p>;
+            return <p>{teamName}: No data</p>;
         }
 
         return (
             <div>
-
                 <h4>{teamName} ({lineup.formation})</h4>
                 <p>Coach: {lineup.coach}</p>
 
@@ -142,12 +195,14 @@ function MatchDetail() {
                 {lineup.substitutes.map(p => (
                     <div key={p.playerId}>{p.playerName}</div>
                 ))}
-
             </div>
         );
     };
 
 
+    // =========================
+    // STATE
+    // =========================
     if (loading) return <p>Loading...</p>;
     if (!data) return <p>No data</p>;
 
@@ -158,26 +213,37 @@ function MatchDetail() {
 
         <Box sx={{ p: 3, maxWidth: 900, mx: "auto" }}>
 
-            {/* ===================== */}
             {/* HEADER */}
-            {/* ===================== */}
-
             <Box sx={{ textAlign: "center", mb: 3 }}>
 
                 <h2>{fixture.round}</h2>
 
-                <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <Box sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center"
+                }}>
 
+                    {/* HOME */}
                     <Box>
                         <img src={homeTeam.logo} width="60" />
                         <div>{homeTeam.name}</div>
                     </Box>
 
+                    {/* SCORE */}
                     <Box>
-                        <h1>{fixture.homeScore} : {fixture.awayScore}</h1>
-                        <div style={{ color: "red" }}>{fixture.status}</div>
+
+                        <h1 style={{ fontSize: 36 }}>
+                            {fixture.homeScore} : {fixture.awayScore}
+                        </h1>
+
+                        <div style={{ marginTop: 6 }}>
+                            {getStatusChip(fixture.status)}
+                        </div>
+
                     </Box>
 
+                    {/* AWAY */}
                     <Box>
                         <img src={awayTeam.logo} width="60" />
                         <div>{awayTeam.name}</div>
@@ -192,11 +258,7 @@ function MatchDetail() {
             </Box>
 
 
-
-            {/* ===================== */}
             {/* TABS */}
-            {/* ===================== */}
-
             <Tabs value={tab} onChange={(e, v) => setTab(v)} centered>
                 <Tab label="Overview" />
                 <Tab label="Events" />
@@ -205,11 +267,7 @@ function MatchDetail() {
             </Tabs>
 
 
-
-            {/* ===================== */}
             {/* CONTENT */}
-            {/* ===================== */}
-
             <Box sx={{ mt: 3 }}>
 
                 {tab === 0 && (
