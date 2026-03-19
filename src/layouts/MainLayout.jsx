@@ -1,11 +1,10 @@
-import { Link, Outlet, useNavigate } from "react-router-dom";
+import { Link, Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useState } from "react";
+import { theme } from "../styles/theme";
 
 import {
-    AppBar,
-    Toolbar,
-    Typography,
     Box,
+    Typography,
     Button,
     InputBase
 } from "@mui/material";
@@ -15,6 +14,7 @@ import SearchIcon from "@mui/icons-material/Search";
 function MainLayout() {
 
     const navigate = useNavigate();
+    const location = useLocation();
 
     const token = localStorage.getItem("token");
 
@@ -33,91 +33,110 @@ function MainLayout() {
         }
     };
 
+    const navItem = (path, label) => (
+        <Button
+            component={Link}
+            to={path}
+            sx={{
+                color: location.pathname === path
+                    ? theme.colors.primary
+                    : theme.colors.neutral.black,
+                fontWeight: location.pathname === path ? 600 : 400,
+                textTransform: "none"
+            }}
+        >
+            {label}
+        </Button>
+    );
+
     return (
         <Box>
-            <AppBar position="static">
-                <Toolbar>
-                    <Typography
-                        variant="h6"
-                        component={Link}
-                        to="/"
-                        sx={{
-                            color: "white",
-                            textDecoration: "none",
-                            mr: 3
-                        }}
-                    >
-                        All Football
-                    </Typography>
 
-                    <Button color="inherit" component={Link} to="/matches">
-                        Matches
-                    </Button>
+            {/* 🔥 Navbar（白色版本） */}
+            <Box
+                sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    px: 3,
+                    py: 1.5,
+                    borderBottom: `1px solid ${theme.colors.neutral.grey}`,
+                    background: "#fff"
+                }}
+            >
 
-                    <Button color="inherit" component={Link} to="/teams">
-                        Teams
-                    </Button>
+                {/* Logo */}
+                <Typography
+                    component={Link}
+                    to="/"
+                    sx={{
+                        textDecoration: "none",
+                        color: theme.colors.neutral.black,
+                        fontWeight: 700,
+                        mr: 3
+                    }}
+                >
+                    All Football
+                </Typography>
 
-                    <Button color="inherit" component={Link} to="/players">
-                        Players
-                    </Button>
+                {/* 左侧导航 */}
+                {navItem("/", "Home")}
+                {navItem("/team", "Team")}
+                {navItem("/news", "Top News")}
 
-                    <Button color="inherit" component={Link} to="/news">
-                        News
-                    </Button>
+                <Box sx={{ flexGrow: 1 }} />
 
-                    <Box sx={{ flexGrow: 1 }} />
+                {/* 🔍 Search */}
+                <Box
+                    sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        background: theme.colors.neutral.light,
+                        px: 1.5,
+                        borderRadius: 2,
+                        mr: 2
+                    }}
+                >
+                    <SearchIcon sx={{ color: "#888" }} />
 
-                    <Box
-                        sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            background: "white",
-                            px: 1,
-                            borderRadius: 1,
-                            mr: 2
-                        }}
-                    >
-                        <SearchIcon />
+                    <InputBase
+                        placeholder="Search..."
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                        onKeyDown={handleSearch}
+                        sx={{ ml: 1 }}
+                    />
+                </Box>
 
-                        <InputBase
-                            placeholder="Search..."
-                            value={query}
-                            onChange={(e) => setQuery(e.target.value)}
-                            onKeyDown={handleSearch}
-                            sx={{ ml: 1 }}
-                        />
-                    </Box>
+                {/* 右侧 */}
+                {!token && (
+                    <>
+                        {navItem("/login", "Login")}
+                        {navItem("/register", "Register")}
+                    </>
+                )}
 
-                    {!token && (
-                        <>
-                            <Button color="inherit" component={Link} to="/login">
-                                Login
-                            </Button>
+                {token && (
+                    <>
+                        {navItem("/profile", "Profile")}
 
-                            <Button color="inherit" component={Link} to="/register">
-                                Register
-                            </Button>
-                        </>
-                    )}
+                        <Button
+                            onClick={handleLogout}
+                            sx={{
+                                color: theme.colors.neutral.black,
+                                textTransform: "none"
+                            }}
+                        >
+                            Logout
+                        </Button>
+                    </>
+                )}
+            </Box>
 
-                    {token && (
-                        <>
-                            <Button color="inherit" component={Link} to="/profile">
-                                Profile
-                            </Button>
-
-                            <Button color="inherit" onClick={handleLogout}>
-                                Logout
-                            </Button>
-                        </>
-                    )}
-                </Toolbar>
-            </AppBar>
-
-            <Box sx={{ p: 3 }}>
+            {/* 页面内容 */}
+            <Box sx={{ maxWidth: "1200px", margin: "0 auto", p: 3 }}>
                 <Outlet />
             </Box>
+
         </Box>
     );
 }
