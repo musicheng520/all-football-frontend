@@ -3,3 +3,19 @@ body {
     background-color: #F8F8F8;
     color: #1A1A1A;
 }
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px;
+}
+
+.section {
+    margin-top: 40px;
+}
+
+.card {
+    background: #ffffff;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}

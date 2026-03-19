@@ -1,15 +1,16 @@
-import { Link, Outlet, useNavigate, useLocation } from "react-router-dom";
+import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useState } from "react";
 import { theme } from "../styles/theme";
 
 import {
     Box,
     Typography,
-    Button,
-    InputBase
+    InputBase,
 } from "@mui/material";
 
 import SearchIcon from "@mui/icons-material/Search";
+
+import NavPill from "../components/NavPill";
 
 function MainLayout() {
 
@@ -20,6 +21,9 @@ function MainLayout() {
 
     const [query, setQuery] = useState("");
 
+    // =============================
+    // Handlers
+    // =============================
     const handleLogout = () => {
         localStorage.removeItem("token");
         navigate("/");
@@ -33,26 +37,13 @@ function MainLayout() {
         }
     };
 
-    const navItem = (path, label) => (
-        <Button
-            component={Link}
-            to={path}
-            sx={{
-                color: location.pathname === path
-                    ? theme.colors.primary
-                    : theme.colors.neutral.black,
-                fontWeight: location.pathname === path ? 600 : 400,
-                textTransform: "none"
-            }}
-        >
-            {label}
-        </Button>
-    );
-
+    // =============================
+    // Render
+    // =============================
     return (
         <Box>
 
-            {/* 🔥 Navbar（白色版本） */}
+            {/* ================= Navbar ================= */}
             <Box
                 sx={{
                     display: "flex",
@@ -60,40 +51,63 @@ function MainLayout() {
                     px: 3,
                     py: 1.5,
                     borderBottom: `1px solid ${theme.colors.neutral.grey}`,
-                    background: "#fff"
+                    background: "#fff",
                 }}
             >
 
                 {/* Logo */}
                 <Typography
-                    component={Link}
-                    to="/"
+                    onClick={() => navigate("/")}
                     sx={{
-                        textDecoration: "none",
-                        color: theme.colors.neutral.black,
+                        cursor: "pointer",
                         fontWeight: 700,
-                        mr: 3
+                        fontSize: 20,
+                        mr: 4,
                     }}
                 >
                     All Football
                 </Typography>
 
-                {/* 左侧导航 */}
-                {navItem("/", "Home")}
-                {navItem("/team", "Team")}
-                {navItem("/news", "Top News")}
+                {/* ================= 主导航 ================= */}
+                <Box sx={{ display: "flex", gap: 1 }}>
 
+                    <NavPill
+                        active={location.pathname === "/"}
+                        onClick={() => navigate("/")}
+                    >
+                        Home
+                    </NavPill>
+
+                    <NavPill
+                        active={location.pathname.startsWith("/team")}
+                        onClick={() => navigate("/team")}
+                    >
+                        Team
+                    </NavPill>
+
+                    <NavPill
+                        active={location.pathname.startsWith("/news")}
+                        onClick={() => navigate("/news")}
+                    >
+                        Top News
+                    </NavPill>
+
+                </Box>
+
+                {/* 撑开 */}
                 <Box sx={{ flexGrow: 1 }} />
 
-                {/* 🔍 Search */}
+                {/* ================= Search ================= */}
                 <Box
                     sx={{
                         display: "flex",
                         alignItems: "center",
                         background: theme.colors.neutral.light,
-                        px: 1.5,
-                        borderRadius: 2,
-                        mr: 2
+                        px: 2,
+                        py: 0.5,
+                        borderRadius: "999px",
+                        mr: 2,
+                        minWidth: 200,
                     }}
                 >
                     <SearchIcon sx={{ color: "#888" }} />
@@ -103,37 +117,63 @@ function MainLayout() {
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
                         onKeyDown={handleSearch}
-                        sx={{ ml: 1 }}
+                        sx={{
+                            ml: 1,
+                            fontSize: 14,
+                            width: "100%",
+                        }}
                     />
                 </Box>
 
-                {/* 右侧 */}
+                {/* ================= 右侧用户区 ================= */}
                 {!token && (
-                    <>
-                        {navItem("/login", "Login")}
-                        {navItem("/register", "Register")}
-                    </>
+                    <Box sx={{ display: "flex", gap: 1 }}>
+
+                        <NavPill
+                            active={location.pathname === "/login"}
+                            onClick={() => navigate("/login")}
+                        >
+                            Login
+                        </NavPill>
+
+                        <NavPill
+                            active={location.pathname === "/register"}
+                            onClick={() => navigate("/register")}
+                        >
+                            Register
+                        </NavPill>
+
+                    </Box>
                 )}
 
                 {token && (
-                    <>
-                        {navItem("/profile", "Profile")}
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
 
-                        <Button
-                            onClick={handleLogout}
-                            sx={{
-                                color: theme.colors.neutral.black,
-                                textTransform: "none"
-                            }}
+                        <NavPill
+                            active={location.pathname === "/profile"}
+                            onClick={() => navigate("/profile")}
                         >
+                            Profile
+                        </NavPill>
+
+                        <NavPill onClick={handleLogout}>
                             Logout
-                        </Button>
-                    </>
+                        </NavPill>
+
+                    </Box>
                 )}
+
             </Box>
 
-            {/* 页面内容 */}
-            <Box sx={{ maxWidth: "1200px", margin: "0 auto", p: 3 }}>
+            {/* ================= 页面内容 ================= */}
+            <Box
+                sx={{
+                    maxWidth: "1200px",
+                    margin: "0 auto",
+                    px: 3,
+                    py: 3,
+                }}
+            >
                 <Outlet />
             </Box>
 

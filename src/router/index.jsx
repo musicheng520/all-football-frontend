@@ -4,6 +4,7 @@ import MainLayout from "../layouts/MainLayout";
 import Home from "../pages/Home";
 import Matches from "../pages/Matches";
 import Teams from "../pages/Teams";
+import TeamPage from "../pages/Team";
 import Players from "../pages/Players";
 import News from "../pages/News";
 
@@ -42,7 +43,8 @@ const router = createBrowserRouter([
 
             { path: "profile", element: <Profile /> },
 
-            { path: "search", element: <SearchResults /> }
+            { path: "search", element: <SearchResults /> },
+            {path: "/team", element: <TeamPage />}
 
         ]
     }

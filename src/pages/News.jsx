@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Container, Grid, Typography } from "@mui/material";
 import { getNewsList } from "../api/news";
-import NewsCard from "../components/news/NewsCard";
+import NewsCard from "../components/cards/NewsCard.jsx";
 
 function News() {
 
@@ -28,7 +28,7 @@ function News() {
             <Grid container spacing={3}>
                 {newsList.map((news) => (
                     <Grid item xs={12} sm={6} md={4} key={news.id}>
-                        <NewsCard news={news} />
+                        <NewsCard item={news} />
                     </Grid>
                 ))}
             </Grid>
