@@ -1,71 +1,63 @@
-import { useEffect, useState } from "react";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 
-import { Tabs, Tab, Select, MenuItem, Pagination } from "@mui/material";
+import { Box, Select, MenuItem, Pagination } from "@mui/material";
+
+import NavTabs from "../components/common/NavTabs";
+import SectionCard from "../components/common/SectionCard";
+import TeamHero from "../components/layout/TeamHero";
+import NewsCard from "../components/cards/NewsCard";
+import MatchCard from "../components/cards/MatchCard";
+import PlayerCard from "../components/cards/PlayerCard";
+import OverviewCard from "../components/cards/OverviewCard";
 
 import { getTeamDetail } from "../api/teams";
 import { followTeam, unfollowTeam } from "../api/follow";
 import { getNewsByTeam } from "../api/news";
 
+const TABS = ["Overview", "News", "Players", "Matches"];
 
-function TeamDetail() {
+export default function TeamDetail() {
 
     const { id } = useParams();
     const navigate = useNavigate();
 
-    const [team, setTeam] = useState(null);
-    const [squad, setSquad] = useState([]);
+    const [teamDetail, setTeamDetail] = useState(null);
     const [fixtures, setFixtures] = useState([]);
+    const [squad, setSquad] = useState([]);
     const [news, setNews] = useState([]);
-
-    const [following, setFollowing] = useState(false);
 
     const [tab, setTab] = useState(0);
     const [season, setSeason] = useState(2025);
+    const [following, setFollowing] = useState(false);
 
     const [page, setPage] = useState(1);
     const pageSize = 6;
 
-
-
-    // TEAM DETAIL
+    // =========================
+    // DATA
+    // =========================
     useEffect(() => {
 
         getTeamDetail(id, season)
             .then(res => {
-
                 const data = res.data.data;
-
-                setTeam(data.team);
-                setSquad(data.squad || []);
+                setTeamDetail(data.team);
                 setFixtures(data.fixtures || []);
-
-            })
-            .catch(err => {
-                console.error(err);
+                setSquad(data.squad || []);
+                setPage(1);
             });
 
     }, [id, season]);
 
-
-
-    // TEAM NEWS
     useEffect(() => {
-
         getNewsByTeam(id)
-            .then(res => {
-
-                setNews(res.data.data || []);
-
-            })
-            .catch(err => {
-                console.error(err);
-            });
-
+            .then(res => setNews(res.data.data || []));
     }, [id]);
 
-
-
+    // =========================
+    // FOLLOW
+    // =========================
     const handleFollow = async () => {
 
         const token = localStorage.getItem("token");
@@ -75,361 +67,150 @@ function TeamDetail() {
             return;
         }
 
-        try {
-
-            if (following) {
-
-                await unfollowTeam(id);
-                setFollowing(false);
-
-            } else {
-
-                await followTeam(id);
-                setFollowing(true);
-
-            }
-
-        } catch (err) {
-            console.error(err);
+        if (following) {
+            await unfollowTeam(id);
+            setFollowing(false);
+        } else {
+            await followTeam(id);
+            setFollowing(true);
         }
-
     };
 
+    // =========================
+    // OVERVIEW（复用你之前逻辑）
+    // =========================
+    const overviewStats = useMemo(() => {
 
+        const playedMatches = fixtures.filter(f => f.status === "FT");
 
-    if (!team) {
-        return <div>Loading...</div>;
-    }
+        let wins = 0, draws = 0, losses = 0, gf = 0, ga = 0;
 
+        playedMatches.forEach(f => {
 
+            const isHome = f.homeTeamId === teamDetail?.id;
 
-    // pagination
-    const start = (page - 1) * pageSize;
-    const end = start + pageSize;
-    const currentMatches = fixtures.slice(start, end);
+            const myScore = isHome ? (f.homeScore ?? 0) : (f.awayScore ?? 0);
+            const oppScore = isHome ? (f.awayScore ?? 0) : (f.homeScore ?? 0);
 
+            gf += myScore;
+            ga += oppScore;
 
+            if (myScore > oppScore) wins++;
+            else if (myScore === oppScore) draws++;
+            else losses++;
+        });
+
+        return {
+            played: playedMatches.length,
+            wins,
+            draws,
+            losses,
+            gf,
+            ga
+        };
+
+    }, [fixtures, teamDetail]);
+
+    // =========================
+    // PAGINATION
+    // =========================
+    const paginatedMatches = fixtures.slice(
+        (page - 1) * pageSize,
+        page * pageSize
+    );
+
+    if (!teamDetail) return <div>Loading...</div>;
 
     return (
+        <Box sx={{ px: 4, py: 3 }}>
 
-        <div style={{ padding: 20 }}>
+            {/* HERO（直接复用） */}
+            <TeamHero
+                team={teamDetail}
+                isFollowed={following}
+                onFollow={handleFollow}
+            />
 
+            {/* TABS + SEASON */}
+            <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
 
-            {/* Team Header */}
+                <NavTabs tabs={TABS} value={tab} onChange={setTab} />
 
-            <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
-
-                <img src={team.logo} width="80" />
-
-                <div>
-
-                    <h1 style={{ margin: 0 }}>{team.name}</h1>
-
-                    <div style={{ color: "#666" }}>
-                        {team.country} | Founded {team.founded}
-                    </div>
-
-                    <div style={{ color: "#666" }}>
-                        Stadium: {team.venueName}
-                    </div>
-
-                </div>
-
-                <button
-                    style={{ marginLeft: "auto", height: 36 }}
-                    onClick={handleFollow}
-                >
-                    {following ? "Following" : "Follow"}
-                </button>
-
-            </div>
-
-
-
-            {/* Tabs + Season */}
-
-            <div style={{ display: "flex", alignItems: "center", marginTop: 30 }}>
-
-                <Tabs
-                    value={tab}
-                    onChange={(e, v) => setTab(v)}
-                >
-                    <Tab label="News" />
-                    <Tab label="Players" />
-                    <Tab label="Games" />
-                    <Tab label="Stats" />
-                </Tabs>
-
-                <div style={{ marginLeft: "auto" }}>
-
+                <Box sx={{ ml: "auto" }}>
                     <Select
                         size="small"
                         value={season}
                         onChange={(e) => setSeason(e.target.value)}
                     >
-                        <MenuItem value={2025}>2025</MenuItem>
-                        <MenuItem value={2024}>2024</MenuItem>
-                        <MenuItem value={2023}>2023</MenuItem>
-                        <MenuItem value={2022}>2022</MenuItem>
-                        <MenuItem value={2021}>2021</MenuItem>
-                        <MenuItem value={2020}>2020</MenuItem>
-                        <MenuItem value={2019}>2019</MenuItem>
-                        <MenuItem value={2018}>2018</MenuItem>
+                        {[2025, 2024, 2023].map(y => (
+                            <MenuItem key={y} value={y}>{y}</MenuItem>
+                        ))}
                     </Select>
+                </Box>
+            </Box>
 
-                </div>
-
-            </div>
-
-
-
-            {/* NEWS */}
-
+            {/* ========================= */}
+            {/* OVERVIEW */}
+            {/* ========================= */}
             {tab === 0 && (
-
-                <div>
-
-                    <h2>Team News</h2>
-
-                    {news.length === 0 && <p>No news available.</p>}
-
-                    {news.map(n => (
-
-                        <div
-                            key={n.id}
-                            style={{
-                                marginBottom: 18,
-                                borderBottom: "1px solid #eee",
-                                paddingBottom: 10
-                            }}
-                        >
-
-                            <Link to={`/news/${n.id}`}>
-                                <h4 style={{ margin: 0 }}>{n.title}</h4>
-                            </Link>
-
-                            <div style={{ fontSize: 13, color: "#666" }}>
-                                {n.publishedAt}
-                            </div>
-
-                        </div>
-
-                    ))}
-
-                </div>
-
+                <SectionCard>
+                    <OverviewCard stats={overviewStats} />
+                </SectionCard>
             )}
 
-
-
-            {/* PLAYERS */}
-
+            {/* ========================= */}
+            {/* NEWS */}
+            {/* ========================= */}
             {tab === 1 && (
-
-                <div>
-
-                    <h2>Squad</h2>
-
-                    {squad.length === 0 && <p>No players</p>}
-
-                    {squad.map(player => (
-
-                        <div
-                            key={player.id}
-                            style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 10,
-                                marginBottom: 10
-                            }}
-                        >
-
-                            <img src={player.photo} width="30" />
-
-                            <Link to={`/players/${player.id}?season=${season}`}>
-                                {player.name}
-                            </Link>
-
-                            <span style={{ color: "#666" }}>
-                                ({player.age})
-                            </span>
-
-                        </div>
-
-                    ))}
-
-                </div>
-
+                <SectionCard>
+                    <Box sx={{
+                        display: "grid",
+                        gridTemplateColumns: "repeat(auto-fill,minmax(250px,1fr))",
+                        gap: 2
+                    }}>
+                        {news.map(n => (
+                            <NewsCard key={n.id} item={n} />
+                        ))}
+                    </Box>
+                </SectionCard>
             )}
 
-
-
-            {/* MATCHES */}
-
+            {/* ========================= */}
+            {/* PLAYERS */}
+            {/* ========================= */}
             {tab === 2 && (
-
-                <div>
-
-                    <h2>Matches</h2>
-
-                    {fixtures.length === 0 && <p>No matches</p>}
-
-                    {currentMatches.map(match => {
-
-                        const t = match.matchTime;
-
-                        const date = t
-                            ? `${t[0]}-${String(t[1]).padStart(2, "0")}-${String(t[2]).padStart(2, "0")} ${String(t[3]).padStart(2, "0")}:${String(t[4]).padStart(2, "0")}`
-                            : "TBD";
-
-                        return (
-
-                            <Link
-                                key={match.id}
-                                to={`/matches/${match.id}`}
-                                style={{
-                                    textDecoration: "none",
-                                    color: "inherit"
-                                }}
-                            >
-
-                                <div
-                                    style={{
-                                        marginBottom: 18,
-                                        borderBottom: "1px solid #eee",
-                                        paddingBottom: 10,
-                                        cursor: "pointer"
-                                    }}
-                                    onMouseEnter={(e) => {
-                                        e.currentTarget.style.background = "#fafafa";
-                                    }}
-                                    onMouseLeave={(e) => {
-                                        e.currentTarget.style.background = "transparent";
-                                    }}
-                                >
-
-                                    {/* ROUND */}
-                                    <div style={{ fontWeight: "bold" }}>
-                                        {match.round}
-                                    </div>
-
-
-                                    {/* MATCH ROW */}
-                                    <div
-                                        style={{
-                                            display: "flex",
-                                            alignItems: "center",
-                                            justifyContent: "space-between",
-                                            marginTop: 6
-                                        }}
-                                    >
-
-                                        {/* HOME */}
-                                        <Link
-                                            to={`/teams/${match.homeTeamId}`}
-                                            onClick={(e) => e.stopPropagation()}
-                                            style={{
-                                                display: "flex",
-                                                alignItems: "center",
-                                                gap: 6,
-                                                textDecoration: "none",
-                                                color: "inherit",
-                                                width: 150
-                                            }}
-                                        >
-                                            <img src={match.homeTeamLogo} width="26" />
-                                            <span>{match.homeTeamName}</span>
-                                        </Link>
-
-
-                                        {/* SCORE（核心点击区） */}
-                                        <div style={{ textAlign: "center" }}>
-
-                                            <b style={{ fontSize: 16 }}>
-                                                {match.homeScore ?? "-"} :
-                                                {match.awayScore ?? "-"}
-                                            </b>
-
-                                            <div style={{ fontSize: 12, color: "#666" }}>
-                                                {match.status}
-                                            </div>
-
-                                        </div>
-
-
-                                        {/* AWAY */}
-                                        <Link
-                                            to={`/teams/${match.awayTeamId}`}
-                                            onClick={(e) => e.stopPropagation()}
-                                            style={{
-                                                display: "flex",
-                                                alignItems: "center",
-                                                gap: 6,
-                                                textDecoration: "none",
-                                                color: "inherit",
-                                                width: 150,
-                                                justifyContent: "flex-end"
-                                            }}
-                                        >
-                                            <span>{match.awayTeamName}</span>
-                                            <img src={match.awayTeamLogo} width="26" />
-                                        </Link>
-
-                                    </div>
-
-
-                                    {/* META */}
-                                    <div
-                                        style={{
-                                            fontSize: 13,
-                                            color: "#666",
-                                            marginTop: 6,
-                                            textAlign: "center"
-                                        }}
-                                    >
-                                        {date} | {match.venue}
-                                    </div>
-
-                                </div>
-
-                            </Link>
-
-                        );
-
-                    })}
-
-
-                    <Pagination
-                        count={Math.ceil(fixtures.length / pageSize)}
-                        page={page}
-                        onChange={(e, v) => setPage(v)}
-                        style={{ marginTop: 20 }}
-                    />
-
-                </div>
-
+                <SectionCard>
+                    <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                        {squad.map(p => (
+                            <PlayerCard key={p.id} player={p} />
+                        ))}
+                    </Box>
+                </SectionCard>
             )}
 
-
-
-            {/* STATS */}
-
+            {/* ========================= */}
+            {/* MATCHES */}
+            {/* ========================= */}
             {tab === 3 && (
+                <SectionCard>
 
-                <div>
+                    <Box sx={{ display: "grid", gap: 2 }}>
+                        {paginatedMatches.map(f => (
+                            <MatchCard key={f.id} match={f} />
+                        ))}
+                    </Box>
 
-                    <h2>Team Stats</h2>
+                    <Box sx={{ display: "flex", justifyContent: "center", mt: 3 }}>
+                        <Pagination
+                            count={Math.ceil(fixtures.length / pageSize)}
+                            page={page}
+                            onChange={(e, v) => setPage(v)}
+                        />
+                    </Box>
 
-                    <p>Stats module not implemented yet.</p>
-
-                </div>
-
+                </SectionCard>
             )}
 
-        </div>
-
+        </Box>
     );
-
 }
-
-export default TeamDetail;
