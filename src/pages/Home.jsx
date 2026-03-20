@@ -1,13 +1,28 @@
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 
-import SockJS from "sockjs-client";
-import { Client } from "@stomp/stompjs";
 import { motion } from "framer-motion";
 
 import { getNewsList } from "../api/news";
 import { getLiveMatches, getRecentMatches, getUpcomingMatches } from "../api/fixtures";
-import { getMyFollows } from "../api/follow";
+
+
+import { useEffect, useState } from "react";
+
+import SockJS from "sockjs-client";
+import { Client } from "@stomp/stompjs";
+
+
+import {
+    Container,
+    Typography,
+    Box,
+    Grid,
+    Skeleton,
+    Pagination
+} from "@mui/material";
+
+import NewsCarousel from "../components/NewsCarousel";
+import HomeMatchCard from "../components/cards/HomeMatchCard";
+
 
 function Home() {
 
@@ -15,13 +30,28 @@ function Home() {
     const [liveMatches, setLiveMatches] = useState([]);
     const [recentMatches, setRecentMatches] = useState([]);
     const [upcomingMatches, setUpcomingMatches] = useState([]);
-    const [followTeams, setFollowTeams] = useState([]);
 
     const [goalToast, setGoalToast] = useState(null);
     const [loading, setLoading] = useState(true);
 
+    /*pagination*/
+    const [recentPage, setRecentPage] = useState(1);
+    const [upcomingPage, setUpcomingPage] = useState(1);
+
+    const pageSize = 6;
+
+    const recentPaginated = recentMatches.slice(
+        (recentPage - 1) * pageSize,
+        recentPage * pageSize
+    );
+
+    const upcomingPaginated = upcomingMatches.slice(
+        (upcomingPage - 1) * pageSize,
+        upcomingPage * pageSize
+    );
+
     // =========================
-    // ✅ INITIAL FETCH（你之前删掉的核心）
+    // FETCH
     // =========================
     useEffect(() => {
 
@@ -41,17 +71,12 @@ function Home() {
                 setUpcomingMatches(upcomingRes?.data?.data || []);
 
             })
-            .catch(err => console.error(err))
             .finally(() => setLoading(false));
-
-        getMyFollows()
-            .then(res => setFollowTeams(res?.data?.data || []))
-            .catch(() => {});
 
     }, []);
 
     // =========================
-    // ✅ WebSocket（唯一一个！！）
+    // WebSocket
     // =========================
     useEffect(() => {
 
@@ -62,7 +87,6 @@ function Home() {
             reconnectDelay: 5000,
 
             onConnect: () => {
-                console.log("✅ WebSocket Connected");
 
                 client.subscribe("/topic/live", (msg) => {
 
@@ -73,15 +97,13 @@ function Home() {
 
                     setLiveMatches(prev => {
 
-                        if (!prev || prev.length === 0) return prev;
+                        if (!prev) return prev;
 
                         const prevMatch = prev.find(
                             m => (m.fixture?.id || m.id) === incomingId
                         );
 
-                        // =========================
-                        // ⚽ GOAL DETECTION
-                        // =========================
+                        // ⚽ GOAL
                         if (prevMatch) {
 
                             const oldHome = prevMatch.goals?.home ?? 0;
@@ -92,11 +114,8 @@ function Home() {
 
                             if (oldHome !== newHome || oldAway !== newAway) {
 
-                                const homeName = newMatch.teams?.home?.name || "Home";
-                                const awayName = newMatch.teams?.away?.name || "Away";
-
                                 setGoalToast({
-                                    text: `⚽ GOAL! ${homeName} ${newHome}-${newAway} ${awayName}`
+                                    text: `⚽ ${newMatch.teams?.home?.name} ${newHome}-${newAway} ${newMatch.teams?.away?.name}`
                                 });
 
                                 setTimeout(() => setGoalToast(null), 2500);
@@ -105,12 +124,10 @@ function Home() {
 
                         const status = newMatch.fixture?.status?.short;
 
-                        // =========================
-                        // ❌ REMOVE FINISHED
-                        // =========================
+                        // ❌ finished remove
                         if (["FT", "AET", "PEN"].includes(status)) {
-                            return prev.filter(m =>
-                                (m.fixture?.id || m.id) !== incomingId
+                            return prev.filter(
+                                m => (m.fixture?.id || m.id) !== incomingId
                             );
                         }
 
@@ -118,39 +135,19 @@ function Home() {
                             m => (m.fixture?.id || m.id) === incomingId
                         );
 
-                        // =========================
-                        // 🆕 ADD NEW LIVE MATCH
-                        // =========================
-                        if (!exists) {
-                            return [newMatch, ...prev];
-                        }
+                        if (!exists) return [newMatch, ...prev];
 
-                        // =========================
-                        // 🔄 UPDATE MATCH
-                        // =========================
-                        const updated = prev.map(m => {
-
+                        return prev.map(m => {
                             const id = m.fixture?.id || m.id;
 
                             if (id !== incomingId) return m;
 
                             return {
                                 ...m,
-                                fixture: newMatch.fixture || m.fixture,
-                                league: newMatch.league || m.league,
-                                teams: newMatch.teams || m.teams,
-                                goals: newMatch.goals || m.goals,
-                                score: newMatch.score || m.score,
-                                events: newMatch.events || m.events
+                                ...newMatch
                             };
                         });
 
-                        // =========================
-                        // ⏱ SORT
-                        // =========================
-                        return updated.sort((a, b) =>
-                            (b.fixture?.timestamp || 0) - (a.fixture?.timestamp || 0)
-                        );
                     });
 
                 });
@@ -164,105 +161,25 @@ function Home() {
     }, []);
 
     // =========================
-    // RENDER MATCH
+    // Skeleton
     // =========================
-    const renderMatch = (match) => {
+    const renderSkeletonGrid = () => (
+        <Grid container spacing={2}>
+            {[1, 2, 3].map(i => (
+                <Grid item xs={12} md={4} key={i}>
+                    <Skeleton variant="rounded" height={80} />
+                </Grid>
+            ))}
+        </Grid>
+    );
 
-        const isNested = !!match.fixture;
-
-        const matchId = isNested ? match.fixture?.id : match.id;
-
-        const home = isNested ? match.teams?.home : {
-            id: match.homeTeamId,
-            name: match.homeTeamName,
-            logo: match.homeTeamLogo
-        };
-
-        const away = isNested ? match.teams?.away : {
-            id: match.awayTeamId,
-            name: match.awayTeamName,
-            logo: match.awayTeamLogo
-        };
-
-        const homeScore = isNested ? match.goals?.home : match.homeScore;
-        const awayScore = isNested ? match.goals?.away : match.awayScore;
-
-        const status = isNested
-            ? match.fixture?.status?.short
-            : match.status;
-
-        const isLive = ["LIVE", "1H", "2H", "HT", "ET"].includes(status);
-
-        return (
-            <motion.div
-                key={matchId}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.25 }}
-                style={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    padding: "12px 0",
-                    borderBottom: "1px solid #eee"
-                }}
-            >
-
-                {/* HOME */}
-                <Link to={`/teams/${home?.id}`}
-                      style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 220 }}>
-                    <img src={home?.logo} width="22" />
-                    {home?.name}
-                </Link>
-
-                {/* SCORE */}
-                <div style={{ textAlign: "center", minWidth: 90 }}>
-
-                    <motion.b
-                        key={`${homeScore}-${awayScore}`}
-                        initial={{ scale: 1.25 }}
-                        animate={{ scale: 1 }}
-                        transition={{ duration: 0.25 }}
-                        style={{ fontSize: 16, fontWeight: 700 }}
-                    >
-                        {homeScore ?? "-"} : {awayScore ?? "-"}
-                    </motion.b>
-
-                    <motion.div
-                        animate={isLive ? { opacity: [1, 0.4, 1] } : { opacity: 1 }}
-                        transition={{ duration: 1, repeat: isLive ? Infinity : 0 }}
-                        style={{
-                            fontSize: 12,
-                            color: isLive ? "red" : "#666",
-                            marginTop: 2
-                        }}
-                    >
-                        {status || "NS"}
-                    </motion.div>
-
-                </div>
-
-                {/* AWAY */}
-                <Link to={`/teams/${away?.id}`}
-                      style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 220 }}>
-                    {away?.name}
-                    <img src={away?.logo} width="22" />
-                </Link>
-
-                {/* VIEW */}
-                <Link to={`/matches/${matchId}`}>
-                    View
-                </Link>
-
-            </motion.div>
-        );
-    };
-
-    if (loading) return <p style={{ padding: 20 }}>Loading...</p>;
-
+    // =========================
+    // UI
+    // =========================
     return (
-        <>
-            {/* ⚽ GOAL TOAST */}
+        <Container maxWidth="lg" sx={{ py: 3 }}>
+
+            {/*  GOAL TOAST */}
             {goalToast && (
                 <motion.div
                     initial={{ y: -60, opacity: 0 }}
@@ -274,7 +191,7 @@ function Home() {
                         transform: "translateX(-50%)",
                         background: "#d32f2f",
                         color: "#fff",
-                        padding: "12px 22px",
+                        padding: "10px 20px",
                         borderRadius: 30,
                         fontWeight: 600,
                         zIndex: 9999
@@ -284,35 +201,110 @@ function Home() {
                 </motion.div>
             )}
 
-            <div style={{ padding: 20, maxWidth: 1100, margin: "0 auto" }}>
+            {/*  CAROUSEL */}
+            {loading
+                ? <Skeleton variant="rounded" height={260} sx={{ mb: 4 }} />
+                : <NewsCarousel news={news.slice(0, 5)} />
+            }
 
-                <h2>🔴 Live Matches</h2>
-                {liveMatches.length === 0
-                    ? <p>No live matches</p>
-                    : liveMatches.map(renderMatch)}
+            {/*  LIVE */}
+            <Box sx={{ mt: 4, mb: 5 }}>
+                <Typography variant="h5" mb={2}>
+                    🔴 Live Matches
+                </Typography>
 
-                <h2>⏱ Recent Matches</h2>
-                {recentMatches.map(renderMatch)}
+                {loading ? (
+                    renderSkeletonGrid()
+                ) : (
+                    <Box sx={{
+                        maxWidth: 720,
+                        mx: "auto",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 2
+                    }}>
+                        {liveMatches.length === 0
+                            ? <Typography>No live matches</Typography>
+                            : liveMatches.map(m => (
+                                <HomeMatchCard key={m.id || m.fixture?.id} match={m} />
+                            ))
+                        }
+                    </Box>
+                )}
+            </Box>
 
-                <h2>📅 Upcoming Matches</h2>
-                {upcomingMatches.map(renderMatch)}
+            {/*  RECENT */}
+            <Box sx={{ mb: 6 }}>
+                <Typography variant="h5" sx={{ mb: 3, fontWeight: 700 }}>
+                    ⏱ Recent Matches
+                </Typography>
 
-                <h2>📰 News</h2>
-                {news.slice(0, 5).map(n => (
-                    <div key={n.id}>
-                        <Link to={`/news/${n.id}`}>{n.title}</Link>
-                    </div>
-                ))}
+                {loading ? renderSkeletonGrid() : (
+                    <>
+                        <Box
+                            sx={{
+                                maxWidth: 720,
+                                mx: "auto",
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: 2.2
+                            }}
+                        >
+                            {recentPaginated.map(m => (
+                                <HomeMatchCard key={m.id} match={m} />
+                            ))}
+                        </Box>
 
-                <h2>⭐ My Teams</h2>
-                {followTeams.map(team => (
-                    <Link key={team.id} to={`/teams/${team.id}`}>
-                        {team.name}
-                    </Link>
-                ))}
+                        {/* 🔥 分页 */}
+                        <Box sx={{ display: "flex", justifyContent: "center", mt: 3 }}>
+                            <Pagination
+                                count={Math.ceil(recentMatches.length / pageSize)}
+                                page={recentPage}
+                                onChange={(e, v) => setRecentPage(v)}
+                                shape="rounded"
+                                color="primary"
+                            />
+                        </Box>
+                    </>
+                )}
+            </Box>
 
-            </div>
-        </>
+            {/*  UPCOMING */}
+            <Box>
+                <Typography variant="h5" sx={{ mb: 3, fontWeight: 700 }}>
+                    📅 Upcoming Matches
+                </Typography>
+
+                {loading ? renderSkeletonGrid() : (
+                    <>
+                        <Box
+                            sx={{
+                                maxWidth: 720,
+                                mx: "auto",
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: 2.2
+                            }}
+                        >
+                            {upcomingPaginated.map(m => (
+                                <HomeMatchCard key={m.id} match={m} />
+                            ))}
+                        </Box>
+
+                        <Box sx={{ display: "flex", justifyContent: "center", mt: 3 }}>
+                            <Pagination
+                                count={Math.ceil(upcomingMatches.length / pageSize)}
+                                page={upcomingPage}
+                                onChange={(e, v) => setUpcomingPage(v)}
+                                shape="rounded"
+                                color="primary"
+                            />
+                        </Box>
+                    </>
+                )}
+            </Box>
+
+        </Container>
     );
 }
 

@@ -1,7 +1,7 @@
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useState } from "react";
 import { theme } from "../styles/theme";
-
+import logo from "../assets/logo.png";
 import {
     Box,
     Typography,
@@ -56,17 +56,58 @@ function MainLayout() {
             >
 
                 {/* Logo */}
-                <Typography
+
+
+                <Box
                     onClick={() => navigate("/")}
                     sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1.2,
                         cursor: "pointer",
-                        fontWeight: 700,
-                        fontSize: 20,
                         mr: 4,
+
+                        "&:hover .logo-img": {
+                            transform: "rotate(-8deg) scale(1.05)"
+                        },
+
+                        "&:hover .logo-text": {
+                            opacity: 0.85
+                        }
                     }}
                 >
-                    All Football
-                </Typography>
+
+                    {/* LOGO ICON */}
+                    <Box
+                        component="img"
+                        src={logo}
+                        alt="All Football"
+                        className="logo-img"
+                        sx={{
+                            height: 34,
+                            transition: "0.25s ease"
+                        }}
+                    />
+
+                    {/* BRAND TEXT（高级渐变） */}
+                    <Typography
+                        className="logo-text"
+                        sx={{
+                            fontWeight: 800,
+                            fontSize: 20,
+                            letterSpacing: "-0.5px",
+
+                            background: "linear-gradient(90deg,#111,#4caf50)",
+                            WebkitBackgroundClip: "text",
+                            WebkitTextFillColor: "transparent",
+
+                            transition: "0.2s"
+                        }}
+                    >
+                        All Football
+                    </Typography>
+
+                </Box>
 
                 {/* ================= 主导航 ================= */}
                 <Box sx={{ display: "flex", gap: 1 }}>
