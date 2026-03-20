@@ -2,6 +2,7 @@ import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useState } from "react";
 import { theme } from "../styles/theme";
 import logo from "../assets/logo.png";
+
 import {
     Box,
     Typography,
@@ -11,6 +12,7 @@ import {
 import SearchIcon from "@mui/icons-material/Search";
 
 import NavPill from "../components/NavPill";
+import Footer from "../layouts/Footer"; //
 
 function MainLayout() {
 
@@ -21,9 +23,6 @@ function MainLayout() {
 
     const [query, setQuery] = useState("");
 
-    // =============================
-    // Handlers
-    // =============================
     const handleLogout = () => {
         localStorage.removeItem("token");
         navigate("/");
@@ -37,11 +36,15 @@ function MainLayout() {
         }
     };
 
-    // =============================
-    // Render
-    // =============================
     return (
-        <Box>
+        <Box
+            sx={{
+                minHeight: "100vh",
+                display: "flex",
+                flexDirection: "column",
+                background: "#f7f9fc"
+            }}
+        >
 
             {/* ================= Navbar ================= */}
             <Box
@@ -56,8 +59,6 @@ function MainLayout() {
             >
 
                 {/* Logo */}
-
-
                 <Box
                     onClick={() => navigate("/")}
                     sx={{
@@ -77,7 +78,6 @@ function MainLayout() {
                     }}
                 >
 
-                    {/* LOGO ICON */}
                     <Box
                         component="img"
                         src={logo}
@@ -89,18 +89,15 @@ function MainLayout() {
                         }}
                     />
 
-                    {/* BRAND TEXT（高级渐变） */}
                     <Typography
                         className="logo-text"
                         sx={{
                             fontWeight: 800,
                             fontSize: 20,
                             letterSpacing: "-0.5px",
-
                             background: "linear-gradient(90deg,#111,#4caf50)",
                             WebkitBackgroundClip: "text",
                             WebkitTextFillColor: "transparent",
-
                             transition: "0.2s"
                         }}
                     >
@@ -109,36 +106,24 @@ function MainLayout() {
 
                 </Box>
 
-                {/* ================= 主导航 ================= */}
+                {/* Nav */}
                 <Box sx={{ display: "flex", gap: 1 }}>
-
-                    <NavPill
-                        active={location.pathname === "/"}
-                        onClick={() => navigate("/")}
-                    >
+                    <NavPill active={location.pathname === "/"} onClick={() => navigate("/")}>
                         Home
                     </NavPill>
 
-                    <NavPill
-                        active={location.pathname.startsWith("/team")}
-                        onClick={() => navigate("/team")}
-                    >
+                    <NavPill active={location.pathname.startsWith("/team")} onClick={() => navigate("/team")}>
                         Team
                     </NavPill>
 
-                    <NavPill
-                        active={location.pathname.startsWith("/news")}
-                        onClick={() => navigate("/news")}
-                    >
+                    <NavPill active={location.pathname.startsWith("/news")} onClick={() => navigate("/news")}>
                         Top News
                     </NavPill>
-
                 </Box>
 
-                {/* 撑开 */}
                 <Box sx={{ flexGrow: 1 }} />
 
-                {/* ================= Search ================= */}
+                {/* Search */}
                 <Box
                     sx={{
                         display: "flex",
@@ -158,65 +143,52 @@ function MainLayout() {
                         value={query}
                         onChange={(e) => setQuery(e.target.value)}
                         onKeyDown={handleSearch}
-                        sx={{
-                            ml: 1,
-                            fontSize: 14,
-                            width: "100%",
-                        }}
+                        sx={{ ml: 1, fontSize: 14, width: "100%" }}
                     />
                 </Box>
 
-                {/* ================= 右侧用户区 ================= */}
+                {/* Auth */}
                 {!token && (
                     <Box sx={{ display: "flex", gap: 1 }}>
-
-                        <NavPill
-                            active={location.pathname === "/login"}
-                            onClick={() => navigate("/login")}
-                        >
+                        <NavPill active={location.pathname === "/login"} onClick={() => navigate("/login")}>
                             Login
                         </NavPill>
 
-                        <NavPill
-                            active={location.pathname === "/register"}
-                            onClick={() => navigate("/register")}
-                        >
+                        <NavPill active={location.pathname === "/register"} onClick={() => navigate("/register")}>
                             Register
                         </NavPill>
-
                     </Box>
                 )}
 
                 {token && (
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-
-                        <NavPill
-                            active={location.pathname === "/profile"}
-                            onClick={() => navigate("/profile")}
-                        >
+                        <NavPill active={location.pathname === "/profile"} onClick={() => navigate("/profile")}>
                             Profile
                         </NavPill>
 
                         <NavPill onClick={handleLogout}>
                             Logout
                         </NavPill>
-
                     </Box>
                 )}
-
             </Box>
 
             {/* ================= 页面内容 ================= */}
             <Box
                 sx={{
+                    flex: 1,  // 关键：让Footer自动到底
                     maxWidth: "1200px",
                     margin: "0 auto",
                     px: 3,
                     py: 3,
+                    width: "100%"
                 }}
             >
                 <Outlet />
             </Box>
+
+            {/* ================= Footer ================= */}
+            <Footer />
 
         </Box>
     );
