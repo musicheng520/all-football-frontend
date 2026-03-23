@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Box, TextField, Button, Typography } from "@mui/material";
 import { createComment } from "../../api/comment";
 
-const CommentForm = ({ newsId }) => {
+const CommentForm = ({ newsId, onSuccess }) => {
 
     const [content, setContent] = useState("");
 
@@ -11,11 +11,16 @@ const CommentForm = ({ newsId }) => {
         if (!content.trim()) return;
 
         await createComment({
-            newsId: newsId,
-            content: content
+            newsId,
+            content
         });
 
         setContent("");
+
+        // 关键：通知父组件刷新
+        if (onSuccess) {
+            onSuccess();
+        }
     };
 
     return (
