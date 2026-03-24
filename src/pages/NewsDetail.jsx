@@ -6,13 +6,14 @@ import CommentList from "../components/comments/CommentList";
 import CommentForm from "../components/comments/CommentForm";
 import { formatTime } from "../utils/format";
 
-const DEFAULT_IMG = "https://via.placeholder.com/800x400?text=No+Image";
-
 function NewsDetail() {
 
     const { id } = useParams();
     const [news, setNews] = useState(null);
 
+    // =========================
+    // FETCH
+    // =========================
     const fetchData = () => {
         getNewsDetail(id).then(res => {
             setNews(res.data.data);
@@ -25,42 +26,70 @@ function NewsDetail() {
 
     if (!news) return null;
 
-    return (
-        <Container sx={{ mt: 4 }}>
+    // =========================
+    // FILTER IMAGES（核心修复）
+    // =========================
+    const validImages = (news.images || []).filter(
+        img => typeof img === "string" && img.trim() !== ""
+    );
 
+    return (
+        <Container sx={{ mt: 4, maxWidth: 900 }}>
+
+            {/* TITLE */}
             <Typography variant="h4" fontWeight={700}>
                 {news.title}
             </Typography>
 
+            {/* META */}
             <Typography sx={{ mb: 2, color: "#666" }}>
                 {news.authorName} · {formatTime(news.publishedAt)}
             </Typography>
 
-            <img
-                src={news.coverImage || DEFAULT_IMG}
-                style={{ width: "100%", borderRadius: 10 }}
-            />
+            {/* COVER（只在有值时显示） */}
+            {news.coverImage && news.coverImage.trim() !== "" && (
+                <img
+                    src={news.coverImage}
+                    style={{
+                        width: "100%",
+                        borderRadius: 10,
+                        marginBottom: 16
+                    }}
+                    onError={(e) => (e.target.style.display = "none")}
+                />
+            )}
 
-            <Typography sx={{ mt: 3 }}>
+            {/* CONTENT */}
+            <Typography sx={{ mt: 2, lineHeight: 1.8 }}>
                 {news.content}
             </Typography>
 
-            {/* images */}
-            {news.images?.length > 0 && (
+            {/* EXTRA IMAGES */}
+            {validImages.length > 0 && (
                 <Box sx={{ mt: 3 }}>
-                    {news.images.map((img, i) => (
+                    {validImages.map((img, i) => (
                         <img
                             key={i}
                             src={img}
-                            style={{ width: "100%", marginBottom: 12, borderRadius: 10 }}
+                            style={{
+                                width: "100%",
+                                marginBottom: 12,
+                                borderRadius: 10
+                            }}
+                            onError={(e) => (e.target.style.display = "none")}
                         />
                     ))}
                 </Box>
             )}
 
-            <CommentList comments={news.comments || []} />
+            {/* COMMENTS */}
+            <Box sx={{ mt: 4 }}>
+                <CommentList comments={news.comments || []} />
+            </Box>
 
-            <CommentForm newsId={id} onSuccess={fetchData} />
+            <Box sx={{ mt: 2 }}>
+                <CommentForm newsId={id} onSuccess={fetchData} />
+            </Box>
 
         </Container>
     );
