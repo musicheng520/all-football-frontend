@@ -1,15 +1,7 @@
-
 import { motion } from "framer-motion";
-
-import { getNewsList } from "../api/news";
-import { getLiveMatches, getRecentMatches, getUpcomingMatches } from "../api/fixtures";
-
-
 import { useEffect, useState } from "react";
-
 import SockJS from "sockjs-client";
 import { Client } from "@stomp/stompjs";
-
 
 import {
     Container,
@@ -22,10 +14,14 @@ import {
 
 import NewsCarousel from "../components/NewsCarousel";
 import HomeMatchCard from "../components/cards/HomeMatchCard";
-
+import {
+    getLiveMatches,
+    getRecentMatches,
+    getUpcomingMatches
+} from "../api/fixtures";
+import {getNewsList} from "../api/news";
 
 function Home() {
-
     const [news, setNews] = useState([]);
     const [liveMatches, setLiveMatches] = useState([]);
     const [recentMatches, setRecentMatches] = useState([]);
@@ -34,11 +30,9 @@ function Home() {
     const [goalToast, setGoalToast] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    /*pagination*/
+    const pageSize = 6;
     const [recentPage, setRecentPage] = useState(1);
     const [upcomingPage, setUpcomingPage] = useState(1);
-
-    const pageSize = 6;
 
     const recentPaginated = recentMatches.slice(
         (recentPage - 1) * pageSize,
@@ -50,11 +44,8 @@ function Home() {
         upcomingPage * pageSize
     );
 
-    // =========================
-    // FETCH
-    // =========================
+    // ========================= FETCH
     useEffect(() => {
-
         setLoading(true);
 
         Promise.all([
@@ -64,247 +55,216 @@ function Home() {
             getUpcomingMatches()
         ])
             .then(([newsRes, liveRes, recentRes, upcomingRes]) => {
-
                 setNews(newsRes?.data?.data || []);
                 setLiveMatches(liveRes?.data?.data || []);
                 setRecentMatches(recentRes?.data?.data || []);
                 setUpcomingMatches(upcomingRes?.data?.data || []);
-
             })
             .finally(() => setLoading(false));
-
     }, []);
 
-    // =========================
-    // WebSocket
-    // =========================
+    // ========================= WEBSOCKET
     useEffect(() => {
-
         const socket = new SockJS("http://localhost:8080/ws");
-
         const client = new Client({
             webSocketFactory: () => socket,
             reconnectDelay: 5000,
-
             onConnect: () => {
-
                 client.subscribe("/topic/live", (msg) => {
-
                     const newMatch = JSON.parse(msg.body);
                     const incomingId = newMatch?.fixture?.id;
-
                     if (!incomingId) return;
 
-                    setLiveMatches(prev => {
-
-                        if (!prev) return prev;
-
+                    setLiveMatches((prev) => {
                         const prevMatch = prev.find(
-                            m => (m.fixture?.id || m.id) === incomingId
+                            (m) => (m.fixture?.id || m.id) === incomingId
                         );
 
-                        // ⚽ GOAL
                         if (prevMatch) {
-
                             const oldHome = prevMatch.goals?.home ?? 0;
                             const oldAway = prevMatch.goals?.away ?? 0;
-
                             const newHome = newMatch.goals?.home ?? oldHome;
                             const newAway = newMatch.goals?.away ?? oldAway;
 
                             if (oldHome !== newHome || oldAway !== newAway) {
-
                                 setGoalToast({
                                     text: `⚽ ${newMatch.teams?.home?.name} ${newHome}-${newAway} ${newMatch.teams?.away?.name}`
                                 });
-
                                 setTimeout(() => setGoalToast(null), 2500);
                             }
                         }
 
                         const status = newMatch.fixture?.status?.short;
 
-                        // ❌ finished remove
                         if (["FT", "AET", "PEN"].includes(status)) {
                             return prev.filter(
-                                m => (m.fixture?.id || m.id) !== incomingId
+                                (m) => (m.fixture?.id || m.id) !== incomingId
                             );
                         }
 
                         const exists = prev.some(
-                            m => (m.fixture?.id || m.id) === incomingId
+                            (m) => (m.fixture?.id || m.id) === incomingId
                         );
 
                         if (!exists) return [newMatch, ...prev];
 
-                        return prev.map(m => {
+                        return prev.map((m) => {
                             const id = m.fixture?.id || m.id;
-
                             if (id !== incomingId) return m;
-
-                            return {
-                                ...m,
-                                ...newMatch
-                            };
+                            return { ...m, ...newMatch };
                         });
-
                     });
-
                 });
             }
         });
 
         client.activate();
-
         return () => client.deactivate();
-
     }, []);
 
-    // =========================
-    // Skeleton
-    // =========================
-    const renderSkeletonGrid = () => (
+    const renderSkeleton = () => (
         <Grid container spacing={2}>
-            {[1, 2, 3].map(i => (
+            {[1, 2, 3].map((i) => (
                 <Grid item xs={12} md={4} key={i}>
-                    <Skeleton variant="rounded" height={80} />
+                    <Skeleton variant="rounded" height={90} />
                 </Grid>
             ))}
         </Grid>
     );
 
-    // =========================
-    // UI
-    // =========================
     return (
-        <Container maxWidth="lg" sx={{ py: 3 }}>
+        <Box
+            sx={{
+                minHeight: "100vh",
+                background:
+                    "linear-gradient(180deg, #f7f9fc 0%, #ffffff 50%)"
+            }}
+        >
+            <Container maxWidth="lg" sx={{ py: 4 }}>
 
-            {/*  GOAL TOAST */}
-            {goalToast && (
-                <motion.div
-                    initial={{ y: -60, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    style={{
-                        position: "fixed",
-                        top: 20,
-                        left: "50%",
-                        transform: "translateX(-50%)",
-                        background: "#d32f2f",
-                        color: "#fff",
-                        padding: "10px 20px",
-                        borderRadius: 30,
-                        fontWeight: 600,
-                        zIndex: 9999
-                    }}
-                >
-                    {goalToast.text}
-                </motion.div>
-            )}
+                {/* GOAL TOAST */}
+                {goalToast && (
+                    <motion.div
+                        initial={{ y: -60, opacity: 0 }}
+                        animate={{ y: 0, opacity: 1 }}
+                        style={{
+                            position: "fixed",
+                            top: 20,
+                            left: "50%",
+                            transform: "translateX(-50%)",
+                            background: "#ff3b30",
+                            color: "#fff",
+                            padding: "10px 20px",
+                            borderRadius: 30,
+                            fontWeight: 600,
+                            zIndex: 9999
+                        }}
+                    >
+                        {goalToast.text}
+                    </motion.div>
+                )}
 
-            {/*  CAROUSEL */}
-            {loading
-                ? <Skeleton variant="rounded" height={260} sx={{ mb: 4 }} />
-                : <NewsCarousel news={news.slice(0, 5)} />
-            }
-
-            {/*  LIVE */}
-            <Box sx={{ mt: 4, mb: 5 }}>
-                <Typography variant="h5" mb={2}>
-                    🔴 Live Matches
-                </Typography>
-
+                {/* HERO */}
                 {loading ? (
-                    renderSkeletonGrid()
+                    <Skeleton variant="rounded" height={300} sx={{ mb: 5 }} />
                 ) : (
-                    <Box sx={{
-                        maxWidth: 720,
-                        mx: "auto",
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: 2
-                    }}>
-                        {liveMatches.length === 0
-                            ? <Typography>No live matches</Typography>
-                            : liveMatches.map(m => (
-                                <HomeMatchCard key={m.id || m.fixture?.id} match={m} />
-                            ))
-                        }
-                    </Box>
+                    <NewsCarousel news={news.slice(0, 5)} />
                 )}
-            </Box>
 
-            {/*  RECENT */}
-            <Box sx={{ mb: 6 }}>
-                <Typography variant="h5" sx={{ mb: 3, fontWeight: 700 }}>
-                    ⏱ Recent Matches
-                </Typography>
-
-                {loading ? renderSkeletonGrid() : (
-                    <>
-                        <Box
-                            sx={{
-                                maxWidth: 720,
-                                mx: "auto",
-                                display: "flex",
-                                flexDirection: "column",
-                                gap: 2.2
-                            }}
-                        >
-                            {recentPaginated.map(m => (
-                                <HomeMatchCard key={m.id} match={m} />
+                {/* LIVE SECTION */}
+                <Section title="Live Matches" accent="#ff3b30">
+                    {loading
+                        ? renderSkeleton()
+                        : liveMatches.length === 0
+                            ? <Empty text="No Live Matches Right Now" />
+                            : liveMatches.map((m) => (
+                                <HomeMatchCard
+                                    key={m.id || m.fixture?.id}
+                                    match={m}
+                                />
                             ))}
-                        </Box>
+                </Section>
 
-                        {/* 🔥 分页 */}
-                        <Box sx={{ display: "flex", justifyContent: "center", mt: 3 }}>
-                            <Pagination
-                                count={Math.ceil(recentMatches.length / pageSize)}
-                                page={recentPage}
-                                onChange={(e, v) => setRecentPage(v)}
-                                shape="rounded"
-                                color="primary"
-                            />
-                        </Box>
-                    </>
-                )}
-            </Box>
+                {/* RECENT SECTION */}
+                <Section title="Recent Matches">
+                    {loading
+                        ? renderSkeleton()
+                        : recentPaginated.map((m) => (
+                            <HomeMatchCard key={m.id} match={m} />
+                        ))}
 
-            {/*  UPCOMING */}
-            <Box>
-                <Typography variant="h5" sx={{ mb: 3, fontWeight: 700 }}>
-                    📅 Upcoming Matches
+                    <Pagination
+                        sx={{ mt: 3, display: "flex", justifyContent: "center" }}
+                        count={Math.ceil(recentMatches.length / pageSize)}
+                        page={recentPage}
+                        onChange={(e, v) => setRecentPage(v)}
+                        shape="rounded"
+                        color="primary"
+                    />
+                </Section>
+
+                {/* UPCOMING SECTION */}
+                <Section title="Upcoming Matches">
+                    {loading
+                        ? renderSkeleton()
+                        : upcomingPaginated.map((m) => (
+                            <HomeMatchCard key={m.id} match={m} />
+                        ))}
+
+                    <Pagination
+                        sx={{ mt: 3, display: "flex", justifyContent: "center" }}
+                        count={Math.ceil(upcomingMatches.length / pageSize)}
+                        page={upcomingPage}
+                        onChange={(e, v) => setUpcomingPage(v)}
+                        shape="rounded"
+                        color="primary"
+                    />
+                </Section>
+
+            </Container>
+        </Box>
+    );
+}
+
+function Section({ title, accent = "#7ED957", children }) {
+    return (
+        <Box sx={{ mb: 6 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 3 }}>
+                <Box
+                    sx={{
+                        width: 10,
+                        height: 10,
+                        borderRadius: "50%",
+                        background: accent
+                    }}
+                />
+                <Typography variant="h5" fontWeight={800}>
+                    {title}
                 </Typography>
-
-                {loading ? renderSkeletonGrid() : (
-                    <>
-                        <Box
-                            sx={{
-                                maxWidth: 720,
-                                mx: "auto",
-                                display: "flex",
-                                flexDirection: "column",
-                                gap: 2.2
-                            }}
-                        >
-                            {upcomingPaginated.map(m => (
-                                <HomeMatchCard key={m.id} match={m} />
-                            ))}
-                        </Box>
-
-                        <Box sx={{ display: "flex", justifyContent: "center", mt: 3 }}>
-                            <Pagination
-                                count={Math.ceil(upcomingMatches.length / pageSize)}
-                                page={upcomingPage}
-                                onChange={(e, v) => setUpcomingPage(v)}
-                                shape="rounded"
-                                color="primary"
-                            />
-                        </Box>
-                    </>
-                )}
             </Box>
 
-        </Container>
+            <Box
+                sx={{
+                    p: 3,
+                    borderRadius: 4,
+                    background: "#ffffff",
+                    boxShadow: "0 8px 24px rgba(0,0,0,0.05)",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 2
+                }}
+            >
+                {children}
+            </Box>
+        </Box>
+    );
+}
+
+function Empty({ text }) {
+    return (
+        <Box sx={{ py: 4, textAlign: "center", color: "#888" }}>
+            <Typography fontWeight={600}>{text}</Typography>
+        </Box>
     );
 }
 

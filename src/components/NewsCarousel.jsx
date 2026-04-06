@@ -2,48 +2,40 @@ import { Box, Typography } from "@mui/material";
 import { Swiper, SwiperSlide } from "swiper/react";
 import { Autoplay, Pagination } from "swiper/modules";
 import { useNavigate } from "react-router-dom";
-
 import "swiper/css";
 import "swiper/css/pagination";
 
-const DEFAULT_IMG = "https://via.placeholder.com/800x400?text=No+Image";
+const DEFAULT_IMG =
+    "https://via.placeholder.com/800x400?text=No+Image";
 
 export default function NewsCarousel({ news = [] }) {
-
     const navigate = useNavigate();
-
     if (!news.length) return null;
 
     return (
-        <Box sx={{ mb: 4 }}>
-
+        <Box sx={{ mb: 6 }}>
             <Swiper
                 modules={[Autoplay, Pagination]}
-                autoplay={{ delay: 3500, disableOnInteraction: false }}
+                autoplay={{ delay: 3500 }}
                 pagination={{ clickable: true }}
                 loop
-                style={{ borderRadius: 16 }}
             >
                 {news.map((item) => (
-
                     <SwiperSlide key={item.id}>
-
                         <Box
                             onClick={() => navigate(`/news/${item.id}`)}
                             sx={{
-                                height: 280,
-                                position: "relative",
-                                overflow: "hidden",
+                                height: 320,
                                 borderRadius: 4,
-                                boxShadow: "0 12px 30px rgba(0,0,0,0.15)",
+                                overflow: "hidden",
+                                position: "relative",
                                 cursor: "pointer",
+                                boxShadow: "0 20px 40px rgba(0,0,0,0.2)",
                                 "&:hover img": {
                                     transform: "scale(1.05)"
                                 }
                             }}
                         >
-
-                            {/* IMAGE */}
                             <img
                                 src={item.coverImage || DEFAULT_IMG}
                                 style={{
@@ -54,30 +46,28 @@ export default function NewsCarousel({ news = [] }) {
                                 }}
                             />
 
-                            {/* OVERLAY */}
-                            <Box sx={{
-                                position: "absolute",
-                                bottom: 0,
-                                left: 0,
-                                right: 0,
-                                p: 3,
-                                background: "linear-gradient(to top, rgba(0,0,0,0.7), transparent)"
-                            }}>
+                            <Box
+                                sx={{
+                                    position: "absolute",
+                                    bottom: 0,
+                                    width: "100%",
+                                    p: 4,
+                                    background:
+                                        "linear-gradient(180deg, transparent 0%, rgba(0,0,0,0.7) 100%)"
+                                }}
+                            >
                                 <Typography
-                                    variant="h6"
-                                    fontWeight={700}
+                                    variant="h5"
+                                    fontWeight={800}
                                     color="#fff"
                                 >
                                     {item.title}
                                 </Typography>
                             </Box>
-
                         </Box>
-
                     </SwiperSlide>
                 ))}
             </Swiper>
-
         </Box>
     );
 }
