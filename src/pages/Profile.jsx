@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 
 import {
     Box,
+    Grid,
     Card,
     CardContent,
     Typography,
@@ -12,41 +13,36 @@ import {
     Chip,
     Stack,
     CircularProgress,
-    Skeleton,
     Snackbar,
     Alert,
-    IconButton,
-    Fade
+    Divider,
+    Button
 } from "@mui/material";
 
+import LogoutIcon from "@mui/icons-material/Logout";
 import CameraAltIcon from "@mui/icons-material/CameraAlt";
 
 function Profile() {
-
     const [user, setUser] = useState(null);
     const [teams, setTeams] = useState([]);
-    const [loading, setLoading] = useState(true);
 
+    const [loading, setLoading] = useState(true);
     const [uploading, setUploading] = useState(false);
     const [preview, setPreview] = useState(null);
     const [error, setError] = useState("");
 
-    // =========================
-    // INIT
-    // =========================
+    // ================= INIT =================
     useEffect(() => {
-
         const init = async () => {
             try {
-                const [userRes, followRes] = await Promise.all([
+                const [u, t] = await Promise.all([
                     getProfile(),
                     getMyFollows()
                 ]);
 
-                setUser(userRes.data.data);
-                setTeams(followRes.data.data || []);
+                setUser(u?.data?.data);
+                setTeams(t?.data?.data || []);
             } catch (err) {
-                console.error(err);
                 setError("Failed to load profile");
             } finally {
                 setLoading(false);
@@ -54,15 +50,11 @@ function Profile() {
         };
 
         init();
-
     }, []);
 
-    // =========================
-    // UPLOAD HANDLER
-    // =========================
+    // ================= UPLOAD =================
     const handleUpload = async (e) => {
-
-        const file = e.target.files[0];
+        const file = e.target.files?.[0];
         if (!file) return;
 
         if (!file.type.startsWith("image/")) {
@@ -80,223 +72,208 @@ function Profile() {
 
         try {
             setUploading(true);
-
             const res = await uploadAvatar(file);
-            const url = res.data.data;
+            const url = res?.data?.data;
 
-            setUser(prev => ({
-                ...prev,
-                avatar: url
-            }));
-
+            setUser((prev) => ({ ...prev, avatar: url }));
             setPreview(null);
-
-        } catch (err) {
-            console.error(err);
+        } catch {
             setError("Upload failed");
         } finally {
             setUploading(false);
+            e.target.value = "";
         }
     };
 
-    // =========================
-    // LOADING SKELETON
-    // =========================
-    if (loading) {
-        return (
-            <Box sx={{ maxWidth: 1000, mx: "auto", mt: 4, px: 2 }}>
-                <Card sx={{ borderRadius: 4, p: 3 }}>
-                    <Stack direction="row" spacing={3} alignItems="center">
-                        <Skeleton variant="circular" width={80} height={80} />
-                        <Box sx={{ flex: 1 }}>
-                            <Skeleton width="40%" height={30} />
-                            <Skeleton width="25%" />
-                        </Box>
-                    </Stack>
-                </Card>
-            </Box>
-        );
-    }
+    if (loading) return null;
+    if (!user) return null;
+
+    const followCount = teams.length;
 
     return (
+        <Box sx={{ maxWidth: 1100, mx: "auto", mt: 5, px: 2 }}>
 
-        <Box sx={{ maxWidth: 1000, mx: "auto", mt: 4, px: 2 }}>
+            <Grid container spacing={4}>
 
-            {/* ================= USER CARD ================= */}
-            <Fade in timeout={400}>
-                <Card
-                    sx={{
-                        borderRadius: 4,
-                        mb: 3,
-                        boxShadow: "0 12px 30px rgba(0,0,0,0.06)",
-                        transition: "0.3s",
-                        "&:hover": {
-                            boxShadow: "0 16px 40px rgba(0,0,0,0.08)"
-                        }
-                    }}
-                >
-                    <CardContent
+                {/* ================= LEFT COLUMN (5/12) ================= */}
+                <Grid item xs={12} md={5}>
+                    <Box
                         sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 4
+                            position: { md: "sticky" },
+                            top: { md: 100 }
                         }}
                     >
+                        <Card
+                            sx={{
+                                borderRadius: 4,
+                                boxShadow: "0 16px 40px rgba(0,0,0,0.06)",
+                                border: "1px solid",
+                                borderColor: "divider"
+                            }}
+                        >
+                            <CardContent sx={{ p: 4 }}>
 
-                        {/* Avatar */}
-                        <Box sx={{ position: "relative" }}>
+                                <Stack spacing={3} alignItems="center">
 
-                            <label htmlFor="avatar-upload">
+                                    {/* Avatar */}
+                                    <Box sx={{ position: "relative" }}>
+                                        <label htmlFor="avatar-upload" style={{ cursor: "pointer" }}>
+                                            <Avatar
+                                                src={preview || user.avatar}
+                                                sx={{
+                                                    width: 120,
+                                                    height: 120,
+                                                    fontSize: 42,
+                                                    bgcolor: "primary.main",
+                                                    transition: "0.3s",
+                                                    "&:hover": { opacity: 0.9 }
+                                                }}
+                                            >
+                                                {!user.avatar && user.username?.[0]?.toUpperCase()}
+                                            </Avatar>
+                                        </label>
 
-                                <Avatar
-                                    src={preview || user.avatar}
-                                    sx={{
-                                        width: 90,
-                                        height: 90,
-                                        fontSize: 34,
-                                        cursor: "pointer",
-                                        transition: "0.3s",
-                                        "&:hover .overlay": {
-                                            opacity: 1
-                                        }
-                                    }}
-                                >
-                                    {!user.avatar && user.username?.[0]?.toUpperCase()}
-                                </Avatar>
+                                        {uploading && (
+                                            <CircularProgress
+                                                size={120}
+                                                sx={{ position: "absolute", top: 0, left: 0 }}
+                                            />
+                                        )}
 
-                                {/* Overlay */}
-                                <Box
-                                    className="overlay"
-                                    sx={{
-                                        position: "absolute",
-                                        top: 0,
-                                        left: 0,
-                                        width: 90,
-                                        height: 90,
-                                        bgcolor: "rgba(0,0,0,0.55)",
-                                        borderRadius: "50%",
-                                        display: "flex",
-                                        alignItems: "center",
-                                        justifyContent: "center",
-                                        opacity: 0,
-                                        transition: "0.3s",
-                                        cursor: "pointer"
-                                    }}
-                                >
-                                    <CameraAltIcon sx={{ color: "#fff" }} />
-                                </Box>
+                                        <input
+                                            id="avatar-upload"
+                                            type="file"
+                                            hidden
+                                            accept="image/*"
+                                            onChange={handleUpload}
+                                        />
+                                    </Box>
 
-                            </label>
+                                    {/* Info */}
+                                    <Box textAlign="center">
+                                        <Typography variant="h4" fontWeight={900}>
+                                            {user.username}
+                                        </Typography>
 
-                            {uploading && (
-                                <CircularProgress
-                                    size={90}
-                                    sx={{
-                                        position: "absolute",
-                                        top: 0,
-                                        left: 0
-                                    }}
-                                />
-                            )}
+                                        <Typography color="text.secondary" mt={1}>
+                                            User ID: {user.id}
+                                        </Typography>
 
-                            <input
-                                id="avatar-upload"
-                                type="file"
-                                accept="image/*"
-                                hidden
-                                onChange={handleUpload}
-                            />
-                        </Box>
+                                        <Box
+                                            sx={{
+                                                mt: 2,
+                                                px: 2.5,
+                                                py: 0.7,
+                                                borderRadius: 3,
+                                                bgcolor: "primary.light",
+                                                fontWeight: 800,
+                                                display: "inline-block"
+                                            }}
+                                        >
+                                            {user.role}
+                                        </Box>
+                                    </Box>
 
-                        {/* Info */}
-                        <Box>
-                            <Typography variant="h4" fontWeight={800}>
-                                {user.username}
-                            </Typography>
+                                    <Divider sx={{ width: "100%" }} />
 
-                            <Typography color="text.secondary" mt={0.5}>
-                                User ID: {user.id}
-                            </Typography>
-
-                            <Typography
-                                sx={{
-                                    mt: 1.5,
-                                    px: 2,
-                                    py: 0.5,
-                                    borderRadius: 3,
-                                    bgcolor: "primary.light",
-                                    fontSize: 13,
-                                    fontWeight: 600,
-                                    display: "inline-block"
-                                }}
-                            >
-                                {user.role}
-                            </Typography>
-                        </Box>
-
-                    </CardContent>
-                </Card>
-            </Fade>
-
-            {/* ================= FOLLOWED TEAMS ================= */}
-            <Fade in timeout={600}>
-                <Card
-                    sx={{
-                        borderRadius: 4,
-                        boxShadow: "0 12px 30px rgba(0,0,0,0.06)"
-                    }}
-                >
-                    <CardContent>
-
-                        <Typography variant="h6" fontWeight={800} mb={2}>
-                            ⭐ Followed Teams
-                        </Typography>
-
-                        {teams.length === 0 ? (
-                            <Typography color="text.secondary">
-                                You are not following any teams yet.
-                            </Typography>
-                        ) : (
-                            <Stack
-                                direction="row"
-                                flexWrap="wrap"
-                                gap={1.5}
-                            >
-                                {teams.map(team => (
-                                    <Chip
-                                        key={team.id}
-                                        label={team.name}
-                                        component={Link}
-                                        to={`/teams/${team.id}`}
-                                        clickable
-                                        sx={{
-                                            px: 1,
-                                            fontWeight: 600,
-                                            borderRadius: 3,
-                                            transition: "0.2s",
-                                            "&:hover": {
-                                                transform: "translateY(-2px)"
-                                            }
+                                    <Button
+                                        variant="contained"
+                                        color="error"
+                                        fullWidth
+                                        startIcon={<LogoutIcon />}
+                                        sx={{ borderRadius: 3 }}
+                                        onClick={() => {
+                                            localStorage.removeItem("token");
+                                            window.location.href = "/";
                                         }}
-                                    />
-                                ))}
-                            </Stack>
-                        )}
+                                    >
+                                        Logout
+                                    </Button>
 
-                    </CardContent>
-                </Card>
-            </Fade>
+                                </Stack>
+                            </CardContent>
+                        </Card>
+                    </Box>
+                </Grid>
 
-            {/* ================= ERROR SNACKBAR ================= */}
+                {/* ================= RIGHT COLUMN (7/12) ================= */}
+                <Grid item xs={12} md={7}>
+                    <Stack spacing={4}>
+
+                        {/* Followed Teams */}
+                        <Card
+                            sx={{
+                                borderRadius: 4,
+                                boxShadow: "0 16px 40px rgba(0,0,0,0.06)",
+                                border: "1px solid",
+                                borderColor: "divider"
+                            }}
+                        >
+                            <CardContent sx={{ p: 4 }}>
+                                <Typography variant="h5" fontWeight={900} mb={2}>
+                                    ⭐ Followed Teams
+                                </Typography>
+
+                                {followCount === 0 ? (
+                                    <Typography color="text.secondary">
+                                        You are not following any teams yet.
+                                    </Typography>
+                                ) : (
+                                    <Stack direction="row" flexWrap="wrap" gap={1.5}>
+                                        {teams.map((team) => (
+                                            <Chip
+                                                key={team.id}
+                                                label={team.name}
+                                                component={Link}
+                                                to={`/teams/${team.id}`}
+                                                clickable
+                                                sx={{
+                                                    fontWeight: 700,
+                                                    borderRadius: 3,
+                                                    transition: "0.2s",
+                                                    "&:hover": {
+                                                        transform: "translateY(-2px)"
+                                                    }
+                                                }}
+                                            />
+                                        ))}
+                                    </Stack>
+                                )}
+                            </CardContent>
+                        </Card>
+
+                        {/* Activity Block */}
+                        <Card
+                            sx={{
+                                borderRadius: 4,
+                                boxShadow: "0 16px 40px rgba(0,0,0,0.06)",
+                                border: "1px solid",
+                                borderColor: "divider"
+                            }}
+                        >
+                            <CardContent sx={{ p: 4 }}>
+                                <Typography variant="h5" fontWeight={900} mb={2}>
+                                    📊 Account Summary
+                                </Typography>
+
+                                <Typography color="text.secondary" sx={{ lineHeight: 1.8 }}>
+                                    You are following {followCount} team{followCount !== 1 && "s"}.
+                                    Explore live matches and top news to personalize your feed.
+                                </Typography>
+                            </CardContent>
+                        </Card>
+
+                    </Stack>
+                </Grid>
+
+            </Grid>
+
             <Snackbar
                 open={!!error}
                 autoHideDuration={3000}
                 onClose={() => setError("")}
-                anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
             >
-                <Alert severity="error" onClose={() => setError("")}>
-                    {error}
-                </Alert>
+                <Alert severity="error">{error}</Alert>
             </Snackbar>
 
         </Box>
