@@ -1,3 +1,4 @@
+// src/pages/Login.jsx
 import { useState } from "react";
 import { login } from "../api/auth";
 import { useNavigate, Link } from "react-router-dom";
@@ -25,12 +26,29 @@ function Login() {
     const handleLogin = async () => {
         try {
             setLoading(true);
+            setErrorMsg("");
 
             const res = await login({ username, password });
 
-            localStorage.setItem("token", res.data.data);
-            navigate("/profile");
+            if (!res.data || res.data.code !== 200) {
+                setErrorMsg(res.data?.msg || "Login failed");
+                return;
+            }
 
+            const token = res.data.data;
+
+            if (!token || typeof token !== "string" || !token.includes(".")) {
+                setErrorMsg("Invalid token");
+                return;
+            }
+
+            const payload = JSON.parse(atob(token.split(".")[1]));
+            const role = payload.role;
+
+            localStorage.setItem("token", token);
+            localStorage.setItem("role", role);
+
+            navigate("/profile");
         } catch (err) {
             setErrorMsg("Invalid username or password.");
         } finally {
@@ -45,8 +63,7 @@ function Login() {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                background:
-                    "linear-gradient(135deg,#0f172a 0%,#1e293b 100%)",
+                background: "linear-gradient(135deg,#0f172a 0%,#1e293b 100%)",
                 px: 2
             }}
         >
@@ -63,7 +80,6 @@ function Login() {
                     }}
                 >
                     <CardContent sx={{ p: 4 }}>
-
                         <Typography
                             variant="h4"
                             fontWeight={800}
@@ -113,7 +129,6 @@ function Login() {
                             Don’t have an account?{" "}
                             <Link to="/register">Register</Link>
                         </Typography>
-
                     </CardContent>
                 </Card>
             </motion.div>

@@ -18,6 +18,12 @@ import Register from "../pages/Register";
 import Profile from "../pages/Profile";
 import SearchResults from "../pages/SearchResults";
 
+import AdminLogin from "../pages/admin/AdminLogin.jsx";
+import AdminNewsPage from "../pages/admin/NewsPage";
+import RequireAdmin from "../components/RequireAdmin";
+import AdminLayout from "../components/layout/AdminLayout.jsx";
+import {Navigate} from "react-router-dom";
+
 const router = createBrowserRouter([
     {
         path: "/",
@@ -44,8 +50,24 @@ const router = createBrowserRouter([
             { path: "profile", element: <Profile /> },
 
             { path: "search", element: <SearchResults /> },
-            {path: "/team", element: <TeamPage />}
-
+            {path: "/team", element: <TeamPage />},
+            {
+                path: "/admin/login",
+                element: <AdminLogin />,
+            },
+            {
+                path: "/admin",
+                element: <RequireAdmin/>, // 先判断是否管理员
+                children: [
+                    {
+                        element: <AdminLayout/>, // 渲染左侧栏+Outlet
+                        children: [
+                            {index: true, element: <Navigate to="news" replace/>},
+                            {path: "news", element: <AdminNewsPage/>},
+                        ],
+                    },
+                ],
+            }
         ]
     }
 ]);
