@@ -1,27 +1,34 @@
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import { useState } from "react";
-import { theme } from "../styles/theme";
 import logo from "../assets/logo.png";
 
 import {
     Box,
     Typography,
     InputBase,
+    Container,
+    IconButton,
+    Drawer,
+    Stack,
+    useMediaQuery,
+    alpha,
 } from "@mui/material";
 
 import SearchIcon from "@mui/icons-material/Search";
+import MenuIcon from "@mui/icons-material/Menu";
 
 import NavPill from "../components/NavPill";
-import Footer from "../layouts/Footer"; //
+import Footer from "../layouts/Footer";
 
 function MainLayout() {
-
     const navigate = useNavigate();
     const location = useLocation();
+    const isMobile = useMediaQuery("(max-width:900px)");
 
     const token = localStorage.getItem("token");
 
     const [query, setQuery] = useState("");
+    const [mobileOpen, setMobileOpen] = useState(false);
 
     const handleLogout = () => {
         localStorage.removeItem("token");
@@ -36,160 +43,228 @@ function MainLayout() {
         }
     };
 
+    // ✅ 完全正确的 active 判断
+    const isActive = (path) => {
+        const current = location.pathname;
+
+        // 1️⃣ Home 必须完全匹配
+        if (path === "/") {
+            return current === "/";
+        }
+
+        // 2️⃣ 其他支持嵌套
+        return current === path || current.startsWith(path + "/");
+    };
+
+    const navItems = [
+        { label: "Home", path: "/" },
+        { label: "Team", path: "/team" },
+        { label: "Top News", path: "/news" },
+    ];
+
     return (
         <Box
             sx={{
                 minHeight: "100vh",
                 display: "flex",
                 flexDirection: "column",
-                background: "#f7f9fc"
+                bgcolor: "background.default",
             }}
         >
-
             {/* ================= Navbar ================= */}
             <Box
                 sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    px: 3,
-                    py: 1.5,
-                    borderBottom: `1px solid ${theme.colors.neutral.grey}`,
-                    background: "#fff",
+                    position: "sticky",
+                    top: 0,
+                    zIndex: 1200,
+                    backdropFilter: "blur(10px)",
+                    background: (theme) =>
+                        alpha(theme.palette.background.paper, 0.85),
+                    borderBottom: "1px solid",
+                    borderColor: "divider",
                 }}
             >
-
-                {/* Logo */}
-                <Box
-                    onClick={() => navigate("/")}
+                <Container
+                    maxWidth="lg"
                     sx={{
                         display: "flex",
                         alignItems: "center",
-                        gap: 1.2,
-                        cursor: "pointer",
-                        mr: 4,
-
-                        "&:hover .logo-img": {
-                            transform: "rotate(-8deg) scale(1.05)"
-                        },
-
-                        "&:hover .logo-text": {
-                            opacity: 0.85
-                        }
+                        py: 1.5,
                     }}
                 >
-
+                    {/* Logo */}
                     <Box
-                        component="img"
-                        src={logo}
-                        alt="All Football"
-                        className="logo-img"
+                        onClick={() => navigate("/")}
                         sx={{
-                            height: 34,
-                            transition: "0.25s ease"
-                        }}
-                    />
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 1.2,
+                            cursor: "pointer",
+                            mr: 3,
 
-                    <Typography
-                        className="logo-text"
-                        sx={{
-                            fontWeight: 800,
-                            fontSize: 20,
-                            letterSpacing: "-0.5px",
-                            background: "linear-gradient(90deg,#111,#4caf50)",
-                            WebkitBackgroundClip: "text",
-                            WebkitTextFillColor: "transparent",
-                            transition: "0.2s"
+                            // ✅ 恢复 hover 动画
+                            "&:hover .logo-img": {
+                                transform: "rotate(-6deg) scale(1.08)",
+                            },
+
+                            "&:hover .logo-text": {
+                                opacity: 0.85,
+                            },
                         }}
                     >
-                        All Football
-                    </Typography>
+                        <Box
+                            component="img"
+                            src={logo}
+                            alt="All Football"
+                            className="logo-img"
+                            sx={{
+                                height: 34,
+                                transition: "transform 0.3s ease",
+                            }}
+                        />
 
-                </Box>
-
-                {/* Nav */}
-                <Box sx={{ display: "flex", gap: 1 }}>
-                    <NavPill active={location.pathname === "/"} onClick={() => navigate("/")}>
-                        Home
-                    </NavPill>
-
-                    <NavPill active={location.pathname.startsWith("/team")} onClick={() => navigate("/team")}>
-                        Team
-                    </NavPill>
-
-                    <NavPill active={location.pathname.startsWith("/news")} onClick={() => navigate("/news")}>
-                        Top News
-                    </NavPill>
-                </Box>
-
-                <Box sx={{ flexGrow: 1 }} />
-
-                {/* Search */}
-                <Box
-                    sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        background: theme.colors.neutral.light,
-                        px: 2,
-                        py: 0.5,
-                        borderRadius: "999px",
-                        mr: 2,
-                        minWidth: 200,
-                    }}
-                >
-                    <SearchIcon sx={{ color: "#888" }} />
-
-                    <InputBase
-                        placeholder="Search..."
-                        value={query}
-                        onChange={(e) => setQuery(e.target.value)}
-                        onKeyDown={handleSearch}
-                        sx={{ ml: 1, fontSize: 14, width: "100%" }}
-                    />
-                </Box>
-
-                {/* Auth */}
-                {!token && (
-                    <Box sx={{ display: "flex", gap: 1 }}>
-                        <NavPill active={location.pathname === "/login"} onClick={() => navigate("/login")}>
-                            Login
-                        </NavPill>
-
-                        <NavPill active={location.pathname === "/register"} onClick={() => navigate("/register")}>
-                            Register
-                        </NavPill>
+                        <Typography
+                            className="logo-text"
+                            sx={{
+                                fontWeight: 900,
+                                fontSize: 20,
+                                letterSpacing: "-0.5px",
+                                background: "linear-gradient(90deg,#111,#4caf50)",
+                                WebkitBackgroundClip: "text",
+                                WebkitTextFillColor: "transparent",
+                                transition: "0.2s ease",
+                            }}
+                        >
+                            All Football
+                        </Typography>
                     </Box>
-                )}
 
-                {token && (
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                        <NavPill active={location.pathname === "/profile"} onClick={() => navigate("/profile")}>
-                            Profile
-                        </NavPill>
+                    {/* Desktop Nav */}
+                    {!isMobile && (
+                        <Stack direction="row" spacing={1}>
+                            {navItems.map((item) => (
+                                <NavPill
+                                    key={item.path}
+                                    active={isActive(item.path)}
+                                    onClick={() => navigate(item.path)}
+                                >
+                                    {item.label}
+                                </NavPill>
+                            ))}
+                        </Stack>
+                    )}
 
-                        <NavPill onClick={handleLogout}>
-                            Logout
-                        </NavPill>
-                    </Box>
-                )}
+                    <Box sx={{ flexGrow: 1 }} />
+
+                    {/* Search */}
+                    {!isMobile && (
+                        <Box
+                            sx={(theme) => ({
+                                display: "flex",
+                                alignItems: "center",
+                                px: 2,
+                                py: 0.6,
+                                borderRadius: "999px",
+                                minWidth: 220,
+                                bgcolor: theme.palette.grey[100],
+                                "&:focus-within": {
+                                    bgcolor: alpha(theme.palette.primary.main, 0.08),
+                                    boxShadow: `0 0 0 2px ${alpha(
+                                        theme.palette.primary.main,
+                                        0.2
+                                    )}`,
+                                },
+                            })}
+                        >
+                            <SearchIcon sx={{ fontSize: 18 }} />
+
+                            <InputBase
+                                placeholder="Search news, teams..."
+                                value={query}
+                                onChange={(e) => setQuery(e.target.value)}
+                                onKeyDown={handleSearch}
+                                sx={{ ml: 1, fontSize: 14, width: "100%" }}
+                            />
+                        </Box>
+                    )}
+
+                    {/* Auth */}
+                    {!isMobile && (
+                        <Stack direction="row" spacing={1} sx={{ ml: 2 }}>
+                            {!token ? (
+                                <>
+                                    <NavPill
+                                        active={isActive("/login")}
+                                        onClick={() => navigate("/login")}
+                                    >
+                                        Login
+                                    </NavPill>
+
+                                    <NavPill
+                                        active={isActive("/register")}
+                                        onClick={() => navigate("/register")}
+                                    >
+                                        Register
+                                    </NavPill>
+                                </>
+                            ) : (
+                                <>
+                                    <NavPill
+                                        active={isActive("/profile")}
+                                        onClick={() => navigate("/profile")}
+                                    >
+                                        Profile
+                                    </NavPill>
+
+                                    <NavPill onClick={handleLogout}>
+                                        Logout
+                                    </NavPill>
+                                </>
+                            )}
+                        </Stack>
+                    )}
+
+                    {/* Mobile Menu */}
+                    {isMobile && (
+                        <IconButton onClick={() => setMobileOpen(true)}>
+                            <MenuIcon />
+                        </IconButton>
+                    )}
+                </Container>
             </Box>
+
+            {/* ================= Drawer ================= */}
+            <Drawer
+                anchor="right"
+                open={mobileOpen}
+                onClose={() => setMobileOpen(false)}
+            >
+                <Box sx={{ width: 250, p: 3 }}>
+                    <Stack spacing={2}>
+                        {navItems.map((item) => (
+                            <NavPill
+                                key={item.path}
+                                active={isActive(item.path)}
+                                onClick={() => {
+                                    navigate(item.path);
+                                    setMobileOpen(false);
+                                }}
+                            >
+                                {item.label}
+                            </NavPill>
+                        ))}
+                    </Stack>
+                </Box>
+            </Drawer>
 
             {/* ================= 页面内容 ================= */}
-            <Box
-                sx={{
-                    flex: 1,  // 关键：让Footer自动到底
-                    maxWidth: "1200px",
-                    margin: "0 auto",
-                    px: 3,
-                    py: 3,
-                    width: "100%"
-                }}
-            >
-                <Outlet />
+            <Box sx={{ flex: 1, py: { xs: 2, md: 3 } }}>
+                <Container maxWidth="lg">
+                    <Outlet />
+                </Container>
             </Box>
 
-            {/* ================= Footer ================= */}
             <Footer />
-
         </Box>
     );
 }
