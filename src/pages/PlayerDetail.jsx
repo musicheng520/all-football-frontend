@@ -15,7 +15,7 @@ import {
 
 import { motion } from "framer-motion";
 
-import { getPlayerDetail } from "../api/players";
+import { getPlayerDetail } from "../api/players.js";
 import { getNewsByPlayer } from "../api/news";
 
 function PlayerDetail() {
