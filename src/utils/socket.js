@@ -11,7 +11,7 @@ export const connectSocket = (matchId, onMessage) => {
         return;
     }
 
-    const socket = new SockJS("http://localhost:8080/ws");
+    const socket = new SockJS("/api/ws");
 
     client = new Client({
         webSocketFactory: () => socket,
