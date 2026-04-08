@@ -11,7 +11,12 @@ export const connectSocket = (matchId, onMessage) => {
         return;
     }
 
-    const socket = new SockJS("/api/ws");
+    const WS_URL =
+        window.location.hostname === "localhost"
+            ? "http://localhost:8080/ws"
+            : "https://api.sicheng55.com/ws";
+
+    const socket = new SockJS(WS_URL);
 
     client = new Client({
         webSocketFactory: () => socket,
