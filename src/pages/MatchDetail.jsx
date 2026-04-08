@@ -52,7 +52,14 @@ function MatchDetail() {
     useEffect(() => {
         if (!id || id === "null") return;
 
-        const socket = new SockJS("http://localhost:8080/ws");
+        const WS_URL =
+            window.location.hostname === "localhost"
+                ? "http://localhost:8080/ws"
+                : "https://api.sicheng55.com/ws";
+
+        console.log("WS_URL =", WS_URL);
+
+        const socket = new SockJS(WS_URL);
 
         const client = new Client({
             webSocketFactory: () => socket,
