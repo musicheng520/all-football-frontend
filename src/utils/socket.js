@@ -16,6 +16,8 @@ export const connectSocket = (matchId, onMessage) => {
             ? "http://localhost:8080/ws"
             : "https://api.sicheng55.com/ws";
 
+    console.log("WS_URL =", WS_URL);
+
     const socket = new SockJS(WS_URL);
 
     client = new Client({
