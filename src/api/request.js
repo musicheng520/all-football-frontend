@@ -1,10 +1,10 @@
 import axios from "axios";
 
-// ✅ 用环境变量判断，而不是 hostname
+//
 const BASE_URL =
     import.meta.env.MODE === "development"
         ? "http://localhost:8080"
-        : import.meta.env.VITE_API_BASE_URL || "https://api.sicheng55.com";
+        : "https://api.sicheng55.com";
 
 const request = axios.create({
     baseURL: BASE_URL,
