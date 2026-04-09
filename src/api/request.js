@@ -1,9 +1,11 @@
 import axios from "axios";
 
+const PROD_API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "https://api.sicheng55.com";
+
 const BASE_URL =
     window.location.hostname === "localhost"
         ? "http://localhost:8080"
-        : "https://api.sicheng55.com";
+        : PROD_API_BASE_URL;
 
 const request = axios.create({
     baseURL: BASE_URL,
